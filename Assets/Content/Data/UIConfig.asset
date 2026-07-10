@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a15f4873945f324e9671983d59b6caa, type: 3}
+  m_Name: UIConfig
+  m_EditorClassIdentifier: Assembly-CSharp::UI.WindowsConfig
+  _screenModels:
+  - _screenType: 1
+    _template: {fileID: -999018966074868122, guid: 121752598ad422043a2144b981b7d156, type: 3}
+    _isAddToStack: 1
+  - _screenType: 2
+    _template: {fileID: 8160830400596316980, guid: 358989f23619c6f4188394fced2dfe46, type: 3}
+    _isAddToStack: 1
+  - _screenType: 3
+    _template: {fileID: 4890618724689653216, guid: 8dd3be21c639c5942a50c0c57159dcc8, type: 3}
+    _isAddToStack: 0
+  - _screenType: 4
+    _template: {fileID: 6620734593347622242, guid: 77f96350f6cf6874186022a16e92d298, type: 3}
+    _isAddToStack: 0
+  - _screenType: 5
+    _template: {fileID: -9060757789790393218, guid: 6ed0b10f38bbce2448ef3a7f896ede35, type: 3}
+    _isAddToStack: 0
+  _popupModels:
+  - _popupType: 0
+    _template: {fileID: 8326583126198431294, guid: 5034252497c1dd44f833c4ddca54e54d, type: 3}
+    _useTotalFader: 1
+  - _popupType: 1
+    _template: {fileID: 6432286701337325028, guid: 12acaadd7bb1dae4089b8000d01d010f, type: 3}
+    _useTotalFader: 1
+  - _popupType: 4
+    _template: {fileID: -8546369727823053912, guid: fb778f833728e8841a0c7428e849d8b2, type: 3}
+    _useTotalFader: 1
+  - _popupType: 5
+    _template: {fileID: -8322783347542921221, guid: 3358011306a501745a0df2ff2c9bd0b3, type: 3}
+    _useTotalFader: 1

@@ -1,0 +1,25 @@
+using UnityEngine;
+
+namespace Services.ObjectPool
+{
+    public class MonoObjectPool : MonoBehaviour
+    {
+        [SerializeField] private string _key;
+
+        [SerializeField] private GameObject _prefab;
+
+        [SerializeField] private bool _isUsedDiContainer;
+
+        [SerializeField] private int _startCount;
+
+        [SerializeField] private Transform _container;
+
+        private ObjectPool _objectPool;
+        public string Key => _key;
+
+        public ObjectPool GetObjectPool()
+        {
+            return _objectPool ??= new ObjectPool(_prefab, _startCount, _container);
+        }
+    }
+}
