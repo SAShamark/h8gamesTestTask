@@ -19,15 +19,6 @@ MonoBehaviour:
   - _screenType: 2
     _template: {fileID: 8160830400596316980, guid: 358989f23619c6f4188394fced2dfe46, type: 3}
     _isAddToStack: 1
-  - _screenType: 3
-    _template: {fileID: 4890618724689653216, guid: 8dd3be21c639c5942a50c0c57159dcc8, type: 3}
-    _isAddToStack: 0
-  - _screenType: 4
-    _template: {fileID: 6620734593347622242, guid: 77f96350f6cf6874186022a16e92d298, type: 3}
-    _isAddToStack: 0
-  - _screenType: 5
-    _template: {fileID: -9060757789790393218, guid: 6ed0b10f38bbce2448ef3a7f896ede35, type: 3}
-    _isAddToStack: 0
   _popupModels:
   - _popupType: 0
     _template: {fileID: 8326583126198431294, guid: 5034252497c1dd44f833c4ddca54e54d, type: 3}
@@ -37,7 +28,4 @@ MonoBehaviour:
     _useTotalFader: 1
   - _popupType: 4
     _template: {fileID: -8546369727823053912, guid: fb778f833728e8841a0c7428e849d8b2, type: 3}
-    _useTotalFader: 1
-  - _popupType: 5
-    _template: {fileID: -8322783347542921221, guid: 3358011306a501745a0df2ff2c9bd0b3, type: 3}
     _useTotalFader: 1

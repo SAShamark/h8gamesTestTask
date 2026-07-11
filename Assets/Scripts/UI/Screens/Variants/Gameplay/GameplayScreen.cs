@@ -4,5 +4,6 @@ namespace UI.Screens.Variants.Gameplay
 {
     public class GameplayScreen : BaseScreen
     {
+        
     }
 }
