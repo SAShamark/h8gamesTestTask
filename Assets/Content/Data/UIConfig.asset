@@ -19,13 +19,4 @@ MonoBehaviour:
   - _screenType: 2
     _template: {fileID: 8160830400596316980, guid: 358989f23619c6f4188394fced2dfe46, type: 3}
     _isAddToStack: 1
-  _popupModels:
-  - _popupType: 0
-    _template: {fileID: 8326583126198431294, guid: 5034252497c1dd44f833c4ddca54e54d, type: 3}
-    _useTotalFader: 1
-  - _popupType: 1
-    _template: {fileID: 6432286701337325028, guid: 12acaadd7bb1dae4089b8000d01d010f, type: 3}
-    _useTotalFader: 1
-  - _popupType: 4
-    _template: {fileID: -8546369727823053912, guid: fb778f833728e8841a0c7428e849d8b2, type: 3}
-    _useTotalFader: 1
+  _popupModels: []
