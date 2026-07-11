@@ -21,21 +21,40 @@ namespace Game.Entities
         [SerializeField] private float _returnToPlayerSmoothTime = 0.28f;
         [SerializeField] private float _velocityDirectionSmoothTime = 0.08f;
 
+        [Header("Damage Shake")]
+        [SerializeField] private float _damageShakeDuration = 0.12f;
+        [SerializeField] private float _damageShakeStrength = 0.12f;
+
         private Transform _playerTarget;
         private MovementControl _movementControl;
         private Vector3 _lookAheadTargetMoveVelocity;
+        private Vector3 _lookAheadTargetPosition;
         private Vector3 _smoothedPlayerVelocity;
         private Vector3 _velocitySmoothing;
-
-
+        private float _shakeTimer;
+        private float _shakeDuration;
+        private float _shakeStrength;
 
         public void Init(Transform target, MovementControl movementControl)
         {
             _playerTarget = target;
             _movementControl = movementControl;
             _lookAheadTarget.position = target.position;
+            _lookAheadTargetPosition = target.position;
             _cinemachineCamera.Follow = _lookAheadTarget;
             _cinemachineCamera.LookAt = _lookAheadTarget;
+        }
+
+        public void ShakeOnDamage()
+        {
+            Shake(_damageShakeStrength, _damageShakeDuration);
+        }
+
+        public void Shake(float strength, float duration)
+        {
+            _shakeStrength = strength;
+            _shakeDuration = duration;
+            _shakeTimer = duration;
         }
 
         private void LateUpdate()
@@ -53,8 +72,9 @@ namespace Game.Entities
                 ? _moveToLeadSmoothTime
                 : _returnToPlayerSmoothTime;
 
-            _lookAheadTarget.position = Vector3.SmoothDamp(_lookAheadTarget.position, targetPosition,
+            _lookAheadTargetPosition = Vector3.SmoothDamp(_lookAheadTargetPosition, targetPosition,
                 ref _lookAheadTargetMoveVelocity, smoothTime);
+            _lookAheadTarget.position = _lookAheadTargetPosition + CalculateShakeOffset();
         }
 
         private Vector3 CalculateLeadOffset()
@@ -71,6 +91,19 @@ namespace Game.Entities
                 : Vector3.zero;
 
             return velocityLead + directionLead;
+        }
+
+        private Vector3 CalculateShakeOffset()
+        {
+            if (_shakeTimer <= 0f)
+            {
+                return Vector3.zero;
+            }
+
+            _shakeTimer -= Time.deltaTime;
+            float fade = _shakeTimer / _shakeDuration;
+            Vector2 randomOffset = Random.insideUnitCircle * (_shakeStrength * fade);
+            return new Vector3(randomOffset.x, 0f, randomOffset.y);
         }
     }
 }
