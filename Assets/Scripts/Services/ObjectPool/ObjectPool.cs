@@ -3,44 +3,42 @@ using UnityEngine;
 
 namespace Services.ObjectPool
 {
-    public class ObjectPool
+    public interface IObjectPool
     {
-        private List<GameObject> _includedPool;
-        private GameObject Prefab { get; }
-        private Transform Container { get; }
-        private List<GameObject> ExcludedPool { get; set; }
+        void ReturnToPool(GameObject go);
+    }
+    public class ObjectPool<T> : IObjectPool where T : Component    {
+        private T _prefab;
+        private Transform _container;
+        
+        private List<T> _includedPool = new();
+        private List<T> _excludedPool = new();
 
-        private List<GameObject> IncludedPool
+        public ObjectPool(T prefab, int count, Transform container)
         {
-            get => _includedPool;
-            set => _includedPool = value;
-        }
-
-
-        public ObjectPool(GameObject prefab, int count, Transform container)
-        {
-            Prefab = prefab;
-            Container = container;
+            _prefab = prefab;
+            _container = container;
 
             CreatePool(count);
         }
 
         private void CreatePool(int count)
         {
-            ExcludedPool = new List<GameObject>();
-            IncludedPool = new List<GameObject>();
+            _excludedPool.Clear();
+            _includedPool.Clear();
+            
             for (int i = 0; i < count; i++)
             {
-                CreateObject();
+                CreateElement();
             }
         }
 
-        private GameObject CreateObject(bool isActiveByDefault = false)
+        private T CreateElement(bool isActiveByDefault = false)
         {
-            GameObject createObject = Object.Instantiate(Prefab, Container);
+            T createdElement = Object.Instantiate(_prefab, _container);
+            createdElement.gameObject.SetActive(isActiveByDefault);
 
-            createObject.gameObject.SetActive(isActiveByDefault);
-            var destroyables = createObject.gameObject.GetComponents<BasePoolDestroyable>();
+            var destroyables = createdElement.GetComponents<BasePoolDestroyable>();
             if (destroyables is { Length: > 0 })
             {
                 foreach (BasePoolDestroyable poolDestroyable in destroyables)
@@ -50,48 +48,62 @@ namespace Services.ObjectPool
             }
             else
             {
-                createObject.AddComponent<BasePoolDestroyable>().Init(this);
+                createdElement.gameObject.AddComponent<BasePoolDestroyable>().Init(this);
             }
-
 
             if (isActiveByDefault)
             {
-                IncludedPool.Add(createObject);
+                _includedPool.Add(createdElement);
             }
             else
             {
-                ExcludedPool.Add(createObject);
+                _excludedPool.Add(createdElement);
             }
 
-            return createObject;
+            return createdElement;
         }
 
-        private bool HasFreeElement(out GameObject element)
+        private bool HasFreeElement(out T element)
         {
-            if (ExcludedPool.Count > 0)
+            if (_excludedPool.Count > 0)
             {
-                GameObject mono = ExcludedPool[0];
-                element = mono;
-                mono.gameObject.SetActive(true);
-                IncludedPool.Add(mono);
-                ExcludedPool.Remove(mono);
+                T cachedElement = _excludedPool[0];
+                element = cachedElement;
+                
+                cachedElement.gameObject.SetActive(true);
+                _includedPool.Add(cachedElement);
+                _excludedPool.RemoveAt(0);
                 return true;
             }
 
             element = null;
-            return element;
+            return false;
         }
 
-        public void TurnOffObject(GameObject @object)
+        public void ReturnToPool(T element)
         {
-            @object.gameObject.SetActive(false);
-            IncludedPool.Remove(@object);
-            ExcludedPool.Add(@object);
+            element.transform.SetParent(_container, false);
+            element.gameObject.SetActive(false);
+            _includedPool.Remove(element);
+            _excludedPool.Add(element);
         }
 
-        public GameObject GetFreeElement()
+        public void ReturnToPool(GameObject go)
         {
-            return HasFreeElement(out GameObject element) ? element : CreateObject(true);
+            if (go.TryGetComponent(out T element))
+            {
+                ReturnToPool(element);
+            }
+        }
+
+        public T GetFreeElement()
+        {
+            if (HasFreeElement(out T element))
+            {
+                return element;
+            }
+            
+            return CreateElement(true);
         }
     }
 }

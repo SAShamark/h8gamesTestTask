@@ -14,6 +14,7 @@ namespace Game.Entities.Character
         [SerializeField] private float _itemVerticalSpacing = 0.1f;
         [SerializeField] private float _itemBackwardSpacing = 0.01f;
         [SerializeField] private InventoryItemAnimation _itemAnimation = new();
+        [SerializeField] private InventoryItemDeliveryAnimation _deliveryAnimation = new();
 
         private readonly Collider[] _overlapResults = new Collider[12];
         private List<Item> _items;
@@ -55,6 +56,36 @@ namespace Game.Entities.Character
 
             itemTransform.localPosition = targetLocalPosition;
             itemTransform.localEulerAngles = _itemLocalRotation;
+        }
+
+        public bool TryTakeLastItem(out Item item)
+        {
+            if (_items.Count == 0)
+            {
+                item = null;
+                return false;
+            }
+
+            int itemIndex = _items.Count - 1;
+            item = _items[itemIndex];
+            _items.RemoveAt(itemIndex);
+            return true;
+        }
+
+        public bool TryDeliverLastItem(Transform deliveryTarget, Action onDelivered)
+        {
+            if (!TryTakeLastItem(out Item item))
+            {
+                return false;
+            }
+
+            _deliveryAnimation.Play(item, deliveryTarget, () =>
+            {
+                item.ReturnToPool();
+                onDelivered.Invoke();
+            });
+
+            return true;
         }
 
         private Vector3 GetLocalPosition(int index)

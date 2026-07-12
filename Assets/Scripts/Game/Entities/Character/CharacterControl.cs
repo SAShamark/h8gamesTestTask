@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Game.Entities.Character
 {
-    public class CharacterControl : MonoBehaviour
+    public class CharacterControl : MonoBehaviour, IInventoryOwner
     {
         [SerializeField] private Inventory _inventory;
         [SerializeField] private Health _health;
@@ -12,6 +12,7 @@ namespace Game.Entities.Character
 
         private FloatingJoystick _joystick;
 
+        public Inventory Inventory => _inventory;
         public Health Health => _health;
         public MovementControl MovementControl => _movementControl;
 

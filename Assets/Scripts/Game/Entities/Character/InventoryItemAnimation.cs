@@ -8,12 +8,12 @@ namespace Game.Entities.Character
     public class InventoryItemAnimation
     {
         [SerializeField] private bool _enabled = true;
-        [SerializeField] private float _moveDuration = 0.42f;
+        [SerializeField] private float _moveDuration = 0.525f;
         [SerializeField] private float _jumpPower = 1.15f;
         [SerializeField] private int _jumpCount = 1;
         [SerializeField] private float _spinAngle = 360f;
         [SerializeField] private float _settleScale = 1.12f;
-        [SerializeField] private float _settleDuration = 0.12f;
+        [SerializeField] private float _settleDuration = 0.15f;
 
         public bool Enabled => _enabled;
 

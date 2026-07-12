@@ -191,6 +191,7 @@ GameObject:
   m_Component:
   - component: {fileID: 391965071133262003}
   - component: {fileID: 4005888168509570330}
+  - component: {fileID: 4005888168509570331}
   - component: {fileID: 3230060810072748480}
   m_Layer: 0
   m_Name: DeliveryArea
@@ -237,7 +238,34 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 2.5, y: 0.5, z: 2.5}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: 0.2, z: 0}
+--- !u!54 &4005888168509570331
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2984312858175019835}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!114 &3230060810072748480
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -249,7 +277,14 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 57fd68b0b76ec594b823dfd6a662c1c4, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: '::'
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Entities.Areas.DeliveryArea
+  _requiredItemsCount: 5
+  _fillRenderer: {fileID: 3048614842357461372}
+  _itemsCountText: {fileID: 2345932704967989473}
+  _deliveryInterval: 0.05
+  _hitScale: 1.12
+  _hitScaleDuration: 0.12
+  _buildingPrefab: {fileID: 3618055832051179746, guid: 5974c30bdf0a2ee468a0feda7607d4a3, type: 3}
 --- !u!1 &4607603678229263223
 GameObject:
   m_ObjectHideFlags: 0

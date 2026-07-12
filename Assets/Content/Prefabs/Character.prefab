@@ -55,12 +55,18 @@ MonoBehaviour:
     _itemBackwardSpacing: 0.01
     _itemAnimation:
       _enabled: 1
-      _moveDuration: 0.42
+      _moveDuration: 0.525
       _jumpPower: 1.15
       _jumpCount: 1
       _spinAngle: 360
       _settleScale: 1.12
-      _settleDuration: 0.12
+      _settleDuration: 0.15
+    _deliveryAnimation:
+      _flyDuration: 0.35
+      _jumpPower: 1.75
+      _jumpCount: 1
+      _spinAngle: 360
+      _targetWorldOffset: {x: 0, y: 0.25, z: 0}
   _health:
     _maxHealth: 100
     _backgroundFill: {fileID: 6586793330785565963}

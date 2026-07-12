@@ -4,9 +4,9 @@ namespace Services.ObjectPool
 {
     public class BasePoolDestroyable : MonoBehaviour
     {
-        private ObjectPool _objectPool;
+        private IObjectPool _objectPool;
 
-        public void Init(ObjectPool objectPool)
+        public void Init(IObjectPool objectPool)
         {
             _objectPool = objectPool;
         }
@@ -15,7 +15,7 @@ namespace Services.ObjectPool
         {
             if (_objectPool != null)
             {
-                _objectPool.TurnOffObject(gameObject);
+                _objectPool.ReturnToPool(gameObject);
             }
             else
             {
