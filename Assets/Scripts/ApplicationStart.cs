@@ -12,6 +12,6 @@ public class ApplicationStart : MonoBehaviour
     {
         Application.targetFrameRate = ValueConstants.TARGET_FRAME_RATE;
         _servicesManager.Initialize();
-        SceneManager.LoadSceneAsync(TARGET_SCENE_NAME, LoadSceneMode.Additive);
+        SceneManager.LoadScene(TARGET_SCENE_NAME);
     }
 }

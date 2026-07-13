@@ -2,7 +2,7 @@ namespace Services.Currency
 {
     public enum CurrencyType
     {
-        Coin = 0,
-        Diamond = 1,
+        Silver = 0,
+        Gold = 1,
     }
 }

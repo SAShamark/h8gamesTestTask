@@ -26,7 +26,7 @@ namespace Game.Entities
         [SerializeField] private float _damageShakeStrength = 0.12f;
 
         private Transform _playerTarget;
-        private MovementControl _movementControl;
+        private MovementLogic _movementLogic;
         private Vector3 _lookAheadTargetMoveVelocity;
         private Vector3 _lookAheadTargetPosition;
         private Vector3 _smoothedPlayerVelocity;
@@ -35,10 +35,10 @@ namespace Game.Entities
         private float _shakeDuration;
         private float _shakeStrength;
 
-        public void Init(Transform target, MovementControl movementControl)
+        public void Init(Transform target, MovementLogic movementLogic)
         {
             _playerTarget = target;
-            _movementControl = movementControl;
+            _movementLogic = movementLogic;
             _lookAheadTarget.position = target.position;
             _lookAheadTargetPosition = target.position;
             _cinemachineCamera.Follow = _lookAheadTarget;
@@ -64,11 +64,11 @@ namespace Game.Entities
 
         private void MoveLookAheadTarget()
         {
-            _smoothedPlayerVelocity = Vector3.SmoothDamp(_smoothedPlayerVelocity, _movementControl.Velocity,
+            _smoothedPlayerVelocity = Vector3.SmoothDamp(_smoothedPlayerVelocity, _movementLogic.Velocity,
                 ref _velocitySmoothing, _velocityDirectionSmoothTime);
 
             Vector3 targetPosition = _playerTarget.position + CalculateLeadOffset();
-            float smoothTime = _movementControl.NormalizedSpeed > 0.05f
+            float smoothTime = _movementLogic.NormalizedSpeed > 0.05f
                 ? _moveToLeadSmoothTime
                 : _returnToPlayerSmoothTime;
 
@@ -80,7 +80,7 @@ namespace Game.Entities
         private Vector3 CalculateLeadOffset()
         {
             Vector3 flatVelocity = Vector3.ProjectOnPlane(_smoothedPlayerVelocity, Vector3.up);
-            float speedPercent = Mathf.Clamp01(_movementControl.NormalizedSpeed);
+            float speedPercent = Mathf.Clamp01(_movementLogic.NormalizedSpeed);
 
             Vector3 velocityLead = Vector3.ClampMagnitude(
                 flatVelocity * _leadDistanceByVelocityTime,

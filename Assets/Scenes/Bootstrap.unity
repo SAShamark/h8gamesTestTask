@@ -432,7 +432,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1161368719
+--- !u!1 &289270838345815155
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -440,9 +440,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1161368722}
-  - component: {fileID: 1161368721}
-  - component: {fileID: 1161368720}
+  - component: {fileID: 8453194625606595434}
+  - component: {fileID: 808756767617595484}
+  - component: {fileID: 5100257577713950229}
   m_Layer: 0
   m_Name: Manager
   m_TagString: Untagged
@@ -450,39 +450,39 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1161368720
+--- !u!114 &808756767617595484
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1161368719}
+  m_GameObject: {fileID: 289270838345815155}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 048db9617a214b22894476a00cb5b1cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ApplicationStart
+  _servicesManager: {fileID: 5100257577713950229}
+--- !u!114 &5100257577713950229
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 289270838345815155}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8ae1824d16e51e14dbb639a81ea1fbf4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ServicesManager
   _currencyCollection: {fileID: 11400000, guid: d60adafbe2d349d47b472c009f3aacae, type: 2}
---- !u!114 &1161368721
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1161368719}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 048db9617a214b22894476a00cb5b1cd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ApplicationStart
-  _servicesManager: {fileID: 1161368720}
---- !u!4 &1161368722
+--- !u!4 &8453194625606595434
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1161368719}
+  m_GameObject: {fileID: 289270838345815155}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -498,4 +498,4 @@ SceneRoots:
   - {fileID: 330585546}
   - {fileID: 410087041}
   - {fileID: 832575519}
-  - {fileID: 1161368722}
+  - {fileID: 8453194625606595434}

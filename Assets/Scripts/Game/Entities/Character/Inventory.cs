@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Services.Currency;
 using UnityEngine;
 
 namespace Game.Entities.Character
@@ -15,9 +16,12 @@ namespace Game.Entities.Character
         [SerializeField] private float _itemBackwardSpacing = 0.01f;
         [SerializeField] private InventoryItemAnimation _itemAnimation = new();
         [SerializeField] private InventoryItemDeliveryAnimation _deliveryAnimation = new();
+        [SerializeField] private InventoryItemDropAnimation _dropAnimation = new();
 
         private readonly Collider[] _overlapResults = new Collider[12];
         private List<Item> _items;
+
+        public event Action<CurrencyType, int> OnItemsCountChanged;
 
         public void Init()
         {
@@ -43,38 +47,46 @@ namespace Game.Entities.Character
         {
             item.MarkCollected();
             _items.Add(item);
+            NotifyItemsCountChanged(item.CurrencyType);
 
             Transform itemTransform = item.Transform;
-            itemTransform.SetParent(_container, true);
-
             Vector3 targetLocalPosition = GetLocalPosition(_items.Count - 1);
+
             if (_itemAnimation.Enabled)
             {
-                _itemAnimation.Play(itemTransform, targetLocalPosition, _itemLocalRotation);
+                _itemAnimation.Play(itemTransform, _container, targetLocalPosition, _itemLocalRotation,
+                    () => GetLocalPosition(_items.IndexOf(item)));
                 return;
             }
 
+            itemTransform.SetParent(_container, true);
             itemTransform.localPosition = targetLocalPosition;
             itemTransform.localEulerAngles = _itemLocalRotation;
         }
 
-        public bool TryTakeLastItem(out Item item)
+        public bool TryTakeItem(CurrencyType currencyType, out Item item)
         {
-            if (_items.Count == 0)
+            for (int i = _items.Count - 1; i >= 0; i--)
             {
-                item = null;
-                return false;
+                if (_items[i].CurrencyType != currencyType)
+                {
+                    continue;
+                }
+
+                item = _items[i];
+                _items.RemoveAt(i);
+                UpdateStackPositions(i);
+                NotifyItemsCountChanged(currencyType);
+                return true;
             }
 
-            int itemIndex = _items.Count - 1;
-            item = _items[itemIndex];
-            _items.RemoveAt(itemIndex);
-            return true;
+            item = null;
+            return false;
         }
 
-        public bool TryDeliverLastItem(Transform deliveryTarget, Action onDelivered)
+        public bool TryDeliverItem(CurrencyType currencyType, Transform deliveryTarget, Action onDelivered)
         {
-            if (!TryTakeLastItem(out Item item))
+            if (!TryTakeItem(currencyType, out Item item))
             {
                 return false;
             }
@@ -88,10 +100,61 @@ namespace Game.Entities.Character
             return true;
         }
 
+        public int GetItemsCount(CurrencyType currencyType)
+        {
+            int count = 0;
+            for (int i = 0; i < _items.Count; i++)
+            {
+                if (_items[i].CurrencyType == currencyType)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        public void DropAll(Vector3 origin)
+        {
+            int itemsCount = _items.Count;
+            HashSet<CurrencyType> droppedCurrencyTypes = new();
+
+            for (int i = 0; i < itemsCount; i++)
+            {
+                Item item = _items[i];
+                droppedCurrencyTypes.Add(item.CurrencyType);
+                _dropAnimation.Play(item, origin, i, itemsCount);
+            }
+
+            _items.Clear();
+
+            foreach (CurrencyType currencyType in droppedCurrencyTypes)
+            {
+                NotifyItemsCountChanged(currencyType);
+            }
+        }
+
+        private void NotifyItemsCountChanged(CurrencyType currencyType)
+        {
+            OnItemsCountChanged?.Invoke(currencyType, GetItemsCount(currencyType));
+        }
+
         private Vector3 GetLocalPosition(int index)
         {
             return _firstItemLocalPosition + new Vector3(0f, index * _itemVerticalSpacing,
                 -index * _itemBackwardSpacing);
+        }
+
+        private void UpdateStackPositions(int startIndex)
+        {
+            for (int i = startIndex; i < _items.Count; i++)
+            {
+                Transform itemTransform = _items[i].Transform;
+                if (itemTransform.parent == _container)
+                {
+                    itemTransform.localPosition = GetLocalPosition(i);
+                }
+            }
         }
     }
 }

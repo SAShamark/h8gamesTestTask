@@ -1,9 +1,10 @@
 using System;
 using Game.Entities.Character;
+using Services.Currency;
 using Services.ObjectPool;
 using UnityEngine;
 
-namespace Game.Entities
+namespace Game.Entities.Spawners
 {
     [Serializable]
     public class StartCurrenciesSpawner
@@ -47,6 +48,16 @@ namespace Game.Entities
             item.PrepareForSpawn();
             item.transform.localPosition = localPosition;
             return item;
+        }
+
+        public void SpawnItem(CurrencyType currencyType, Vector3 worldPosition)
+        {
+            Item itemPrefab = _itemPrefab1.CurrencyType == currencyType ? _itemPrefab1 : _itemPrefab2;
+            ObjectPool<Item> pool = itemPrefab == _itemPrefab1 ? _itemsPool1 : _itemsPool2;
+            Item item = pool.GetFreeElement();
+
+            item.PrepareForSpawn();
+            item.transform.position = worldPosition;
         }
     }
 }

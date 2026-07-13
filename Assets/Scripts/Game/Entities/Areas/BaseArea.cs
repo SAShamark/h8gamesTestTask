@@ -9,14 +9,29 @@ namespace Game.Entities.Areas
         [SerializeField] private AreaType _areaType;
 
         public AreaType AreaType => _areaType;
-        public event Action<CharacterControl> OnCharacterEnter;
+        public event Action<BaseArea, CharacterControl> OnCharacterEnter;
+        public event Action<BaseArea, CharacterControl> OnCharacterExit;
+        public event Action<BaseArea> OnCompleted;
 
-        private void OnTriggerEnter(Collider other)
+        protected virtual void OnTriggerEnter(Collider other)
         {
             if (other.TryGetComponent(out CharacterControl characterControl))
             {
-                OnCharacterEnter?.Invoke(characterControl);
+                OnCharacterEnter?.Invoke(this, characterControl);
             }
+        }
+
+        protected virtual void OnTriggerExit(Collider other)
+        {
+            if (other.TryGetComponent(out CharacterControl characterControl))
+            {
+                OnCharacterExit?.Invoke(this, characterControl);
+            }
+        }
+
+        protected void NotifyCompleted()
+        {
+            OnCompleted?.Invoke(this);
         }
     }
 }

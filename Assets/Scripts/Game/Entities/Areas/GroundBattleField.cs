@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 
 namespace Game.Entities.Areas
 {
@@ -10,22 +11,19 @@ namespace Game.Entities.Areas
         [SerializeField] private List<Transform> _enemies = new();
         [SerializeField] private float _groundHeight = 0.02f;
         [SerializeField] private float _dashGroundHeight = 0.04f;
-        [SerializeField] private float _frontPadding = 0.85f;
-        [SerializeField] private float _backPadding = 0.65f;
-        [SerializeField] private float _sidePadding = 0.85f;
-        [SerializeField] private float _minWidth = 2.2f;
-        [SerializeField] private float _minLength = 3.4f;
+        [FormerlySerializedAs("_sidePadding")]
+        [SerializeField] private float _outlinePadding = 0.85f;
         [SerializeField] private int _capSegments = 14;
         [SerializeField] private Material _fillMaterial;
         [SerializeField] private Material _dashMaterial;
         [SerializeField] private float _dashLength = 0.34f;
         [SerializeField] private float _dashGap = 0.32f;
         [SerializeField] private float _dashWidth = 0.13f;
-        [SerializeField] private float _smoothTime = 0.12f;
         [SerializeField] private Color _fillColor = new(0.72f, 0.42f, 0.25f, 0.72f);
         [SerializeField] private Color _dashColor = Color.white;
 
         private readonly List<Vector3> _points = new();
+        private readonly List<Vector3> _hull = new();
         private readonly List<Vector3> _outline = new();
         private readonly List<Vector3> _vertices = new();
         private readonly List<int> _triangles = new();
@@ -33,10 +31,6 @@ namespace Game.Entities.Areas
         private Mesh _fillMesh;
         private Mesh _dashMesh;
         private Vector3 _currentCenter;
-        private Vector3 _centerVelocity;
-        private Vector2 _currentSize;
-        private Vector2 _sizeVelocity;
-        private Vector3 _currentForward = Vector3.forward;
 
         public void AddEnemy(Transform enemy)
         {
@@ -59,12 +53,12 @@ namespace Game.Entities.Areas
             CreateRenderer("Fill", _fillMesh, _fillMaterial, 0);
             CreateRenderer("Dashes", _dashMesh, _dashMaterial, 1);
 
-            Rebuild(true);
+            Rebuild();
         }
 
         private void LateUpdate()
         {
-            Rebuild(false);
+            Rebuild();
         }
 
         private void CreateRenderer(string objectName, Mesh mesh, Material material, int sortingOrder)
@@ -76,8 +70,25 @@ namespace Game.Entities.Areas
             MeshRenderer meshRenderer = child.AddComponent<MeshRenderer>();
 
             meshFilter.sharedMesh = mesh;
-            meshRenderer.sharedMaterial = CreateMaterialInstance(material, sortingOrder == 0 ? _fillColor : _dashColor);
+            meshRenderer.sharedMaterial = sortingOrder == 0
+                ? CreateMaterialInstance(material, _fillColor)
+                : CreateUnlitMaterial(material, _dashColor);
             meshRenderer.sortingOrder = sortingOrder;
+        }
+
+        private Material CreateUnlitMaterial(Material sourceMaterial, Color color)
+        {
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Sprites/Default");
+            }
+
+            Material material = sourceMaterial != null ? new Material(sourceMaterial) : new Material(shader);
+            material.shader = shader;
+            ApplyMaterialColor(material, color);
+
+            return material;
         }
 
         private Material CreateMaterialInstance(Material sourceMaterial, Color color)
@@ -149,25 +160,10 @@ namespace Game.Entities.Areas
             material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         }
 
-        private void Rebuild(bool instant)
+        private void Rebuild()
         {
             CollectPoints();
-            CalculateTargetShape(out Vector3 targetCenter, out Vector2 targetSize, out Vector3 targetForward);
-
-            if (instant)
-            {
-                _currentCenter = targetCenter;
-                _currentSize = targetSize;
-                _currentForward = targetForward;
-            }
-            else
-            {
-                _currentCenter = Vector3.SmoothDamp(_currentCenter, targetCenter, ref _centerVelocity, _smoothTime);
-                _currentSize = Vector2.SmoothDamp(_currentSize, targetSize, ref _sizeVelocity, _smoothTime);
-                _currentForward = Vector3.Slerp(_currentForward, targetForward, Time.deltaTime / _smoothTime);
-            }
-
-            BuildOutline(_currentCenter, _currentSize, _currentForward);
+            BuildRoundedHull();
             BuildFillMesh();
             BuildDashMesh();
         }
@@ -183,85 +179,136 @@ namespace Game.Entities.Areas
             }
         }
 
-        private void CalculateTargetShape(out Vector3 center, out Vector2 size, out Vector3 forward)
+        private void BuildRoundedHull()
         {
-            Vector3 flagPoint = transform.InverseTransformPoint(_flag.position);
-            Vector3 enemiesCenter = flagPoint + transform.forward;
+            _outline.Clear();
+            BuildConvexHull();
 
-            if (_enemies.Count > 0)
+            if (_hull.Count == 1)
             {
-                enemiesCenter = Vector3.zero;
-
-                for (int i = 0; i < _enemies.Count; i++)
-                {
-                    enemiesCenter += transform.InverseTransformPoint(_enemies[i].position);
-                }
-
-                enemiesCenter /= _enemies.Count;
+                AddCircle(_hull[0], _outlinePadding);
             }
-
-            forward = enemiesCenter - flagPoint;
-            forward.y = 0f;
-
-            if (forward.sqrMagnitude < 0.001f)
+            else if (_hull.Count == 2)
             {
-                forward = _currentForward;
+                BuildCapsule(_hull[0], _hull[1], _outlinePadding);
             }
             else
             {
-                forward.Normalize();
+                for (int i = 0; i < _hull.Count; i++)
+                {
+                    Vector3 previous = _hull[(i - 1 + _hull.Count) % _hull.Count];
+                    Vector3 current = _hull[i];
+                    Vector3 next = _hull[(i + 1) % _hull.Count];
+                    Vector3 incoming = (current - previous).normalized;
+                    Vector3 outgoing = (next - current).normalized;
+                    Vector3 firstNormal = new(incoming.z, 0f, -incoming.x);
+                    Vector3 lastNormal = new(outgoing.z, 0f, -outgoing.x);
+
+                    AddRoundedCorner(current, firstNormal, lastNormal, _outlinePadding);
+                }
             }
 
-            Vector3 side = new(forward.z, 0f, -forward.x);
-            float minForward = 0f;
-            float maxForward = 0f;
-            float minSide = 0f;
-            float maxSide = 0f;
+            _currentCenter = Vector3.zero;
+            for (int i = 0; i < _hull.Count; i++)
+            {
+                _currentCenter += _hull[i];
+            }
+
+            _currentCenter /= _hull.Count;
+            _currentCenter.y = _groundHeight;
+        }
+
+        private void BuildConvexHull()
+        {
+            _hull.Clear();
 
             for (int i = 0; i < _points.Count; i++)
             {
-                Vector3 point = transform.InverseTransformPoint(_points[i]) - flagPoint;
-                float forwardDistance = Vector3.Dot(point, forward);
-                float sideDistance = Vector3.Dot(point, side);
-
-                minForward = Mathf.Min(minForward, forwardDistance);
-                maxForward = Mathf.Max(maxForward, forwardDistance);
-                minSide = Mathf.Min(minSide, sideDistance);
-                maxSide = Mathf.Max(maxSide, sideDistance);
+                Vector3 point = transform.InverseTransformPoint(_points[i]);
+                point.y = _groundHeight;
+                _hull.Add(point);
             }
 
-            minForward -= _backPadding;
-            maxForward += _frontPadding;
-            minSide -= _sidePadding;
-            maxSide += _sidePadding;
+            _hull.Sort((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.z.CompareTo(b.z));
 
-            float centerForward = (minForward + maxForward) * 0.5f;
-            float centerSide = (minSide + maxSide) * 0.5f;
+            if (_hull.Count <= 2)
+            {
+                return;
+            }
 
-            center = flagPoint + forward * centerForward + side * centerSide;
-            center.y = _groundHeight;
-            size = new Vector2(
-                Mathf.Max(_minWidth, maxSide - minSide),
-                Mathf.Max(_minLength, maxForward - minForward));
+            List<Vector3> sortedPoints = new(_hull);
+            _hull.Clear();
+
+            for (int i = 0; i < sortedPoints.Count; i++)
+            {
+                while (_hull.Count >= 2 && Cross(_hull[^2], _hull[^1], sortedPoints[i]) <= 0f)
+                {
+                    _hull.RemoveAt(_hull.Count - 1);
+                }
+
+                _hull.Add(sortedPoints[i]);
+            }
+
+            int lowerHullCount = _hull.Count;
+
+            for (int i = sortedPoints.Count - 2; i >= 0; i--)
+            {
+                while (_hull.Count > lowerHullCount && Cross(_hull[^2], _hull[^1], sortedPoints[i]) <= 0f)
+                {
+                    _hull.RemoveAt(_hull.Count - 1);
+                }
+
+                _hull.Add(sortedPoints[i]);
+            }
+
+            _hull.RemoveAt(_hull.Count - 1);
         }
 
-        private void BuildOutline(Vector3 center, Vector2 size, Vector3 forward)
+        private float Cross(Vector3 a, Vector3 b, Vector3 c)
         {
-            _outline.Clear();
+            return (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x);
+        }
 
-            float radius = size.x * 0.5f;
-            float halfStraightLength = Mathf.Max(0f, (size.y - size.x) * 0.5f);
+        private void AddCircle(Vector3 center, float radius)
+        {
+            int segmentCount = _capSegments * 2;
+
+            for (int i = 0; i < segmentCount; i++)
+            {
+                float angle = i / (float)segmentCount * Mathf.PI * 2f;
+                _outline.Add(center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius);
+            }
+        }
+
+        private void BuildCapsule(Vector3 start, Vector3 end, float radius)
+        {
+            Vector3 forward = (end - start).normalized;
             Vector3 side = new(forward.z, 0f, -forward.x);
-            Vector3 frontCenter = center + forward * halfStraightLength;
-            Vector3 backCenter = center - forward * halfStraightLength;
 
-            AddCap(frontCenter, forward, side, radius, true);
-            AddCap(backCenter, forward, side, radius, false);
+            AddCap(end, forward, side, radius, true);
+            AddCap(start, forward, side, radius, false);
+        }
+
+        private void AddRoundedCorner(Vector3 center, Vector3 firstNormal, Vector3 lastNormal, float radius)
+        {
+            float firstAngle = Mathf.Atan2(firstNormal.z, firstNormal.x);
+            float lastAngle = Mathf.Atan2(lastNormal.z, lastNormal.x);
+            float angleRange = Mathf.Repeat(lastAngle - firstAngle, Mathf.PI * 2f);
+            int segmentCount = Mathf.Max(1, Mathf.CeilToInt(_capSegments * angleRange / Mathf.PI));
+
+            for (int i = 0; i <= segmentCount; i++)
+            {
+                float angle = firstAngle + angleRange * i / segmentCount;
+                _outline.Add(center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius);
+            }
         }
 
         private void AddCap(Vector3 center, Vector3 forward, Vector3 side, float radius, bool isFront)
         {
-            for (int i = 0; i <= _capSegments; i++)
+            int firstPoint = isFront ? 0 : 1;
+            int lastPoint = isFront ? _capSegments : _capSegments - 1;
+
+            for (int i = firstPoint; i <= lastPoint; i++)
             {
                 float t = i / (float)_capSegments * Mathf.PI;
                 Vector3 direction = isFront
@@ -288,8 +335,8 @@ namespace Game.Entities.Areas
             {
                 int next = i == _outline.Count ? 1 : i + 1;
                 _triangles.Add(0);
-                _triangles.Add(i);
                 _triangles.Add(next);
+                _triangles.Add(i);
             }
 
             _fillMesh.Clear();
@@ -303,30 +350,48 @@ namespace Game.Entities.Areas
             _vertices.Clear();
             _triangles.Clear();
 
-            float step = _dashLength + _dashGap;
-            float distance = 0f;
+            float perimeter = 0f;
 
             for (int i = 0; i < _outline.Count; i++)
             {
-                Vector3 from = _outline[i];
-                Vector3 to = _outline[(i + 1) % _outline.Count];
-                float edgeLength = Vector3.Distance(from, to);
-                Vector3 direction = (to - from).normalized;
+                perimeter += Vector3.Distance(_outline[i], _outline[(i + 1) % _outline.Count]);
+            }
 
-                while (distance < edgeLength)
-                {
-                    float dashEnd = Mathf.Min(distance + _dashLength, edgeLength);
-                    AddDash(from + direction * distance, from + direction * dashEnd);
-                    distance += step;
-                }
+            int dashCount = Mathf.Max(1, Mathf.FloorToInt(perimeter / (_dashLength + _dashGap)));
+            float evenlyDistributedGap = (perimeter - dashCount * _dashLength) / dashCount;
+            float step = _dashLength + evenlyDistributedGap;
 
-                distance -= edgeLength;
+            for (int i = 0; i < dashCount; i++)
+            {
+                float dashStart = i * step;
+                Vector3 start = GetOutlinePoint(dashStart);
+                Vector3 end = GetOutlinePoint(dashStart + _dashLength);
+                AddDash(start, end);
             }
 
             _dashMesh.Clear();
             _dashMesh.SetVertices(_vertices);
             _dashMesh.SetTriangles(_triangles, 0);
             _dashMesh.RecalculateBounds();
+        }
+
+        private Vector3 GetOutlinePoint(float distance)
+        {
+            for (int i = 0; i < _outline.Count; i++)
+            {
+                Vector3 from = _outline[i];
+                Vector3 to = _outline[(i + 1) % _outline.Count];
+                float edgeLength = Vector3.Distance(from, to);
+
+                if (distance <= edgeLength)
+                {
+                    return Vector3.Lerp(from, to, distance / edgeLength);
+                }
+
+                distance -= edgeLength;
+            }
+
+            return _outline[0];
         }
 
         private void AddDash(Vector3 start, Vector3 end)

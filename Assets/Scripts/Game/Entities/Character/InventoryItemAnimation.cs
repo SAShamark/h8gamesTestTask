@@ -14,14 +14,24 @@ namespace Game.Entities.Character
         [SerializeField] private float _spinAngle = 360f;
         [SerializeField] private float _settleScale = 1.12f;
         [SerializeField] private float _settleDuration = 0.15f;
+        [SerializeField] private float _itemStartInterval = 0.12f;
+
+        private float _nextAnimationStartTime;
 
         public bool Enabled => _enabled;
 
-        public void Play(Transform item, Vector3 targetLocalPosition, Vector3 targetLocalRotation)
+        public void Play(Transform item, Transform container, Vector3 targetLocalPosition,
+            Vector3 targetLocalRotation, Func<Vector3> getFinalLocalPosition)
         {
             item.DOKill();
 
+            float animationStartTime = Mathf.Max(Time.time, _nextAnimationStartTime);
+            float startDelay = animationStartTime - Time.time;
+            _nextAnimationStartTime = animationStartTime + _itemStartInterval;
+
             Sequence sequence = DOTween.Sequence();
+            sequence.SetDelay(startDelay);
+            sequence.AppendCallback(() => item.SetParent(container, true));
             sequence.Append(item.DOLocalJump(targetLocalPosition, _jumpPower, _jumpCount, _moveDuration)
                 .SetEase(Ease.OutCubic));
             sequence.Join(item.DOLocalRotate(targetLocalRotation + new Vector3(0f, _spinAngle, 0f), _moveDuration,
@@ -33,7 +43,7 @@ namespace Game.Entities.Character
                 .SetEase(Ease.OutQuad));
             sequence.OnComplete(() =>
             {
-                item.localPosition = targetLocalPosition;
+                item.localPosition = getFinalLocalPosition.Invoke();
                 item.localEulerAngles = targetLocalRotation;
             });
         }
