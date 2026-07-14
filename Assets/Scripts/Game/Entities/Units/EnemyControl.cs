@@ -1,4 +1,5 @@
 using System;
+using DG.Tweening;
 using Game.Entities.Character;
 using Services.ObjectPool;
 using UnityEngine;
@@ -19,6 +20,8 @@ namespace Game.Entities.Units
         [SerializeField] private int _initialProjectilePoolSize = 4;
         [SerializeField] private float _aimHeight = 1f;
         [SerializeField] private float _deathAnimationDuration = 2f;
+        [SerializeField] private float _deathSinkDistance = 1.5f;
+        [SerializeField] private float _deathSinkDuration = 0.65f;
 
         [Header("Teammate Chase")]
         [SerializeField, Min(0.1f)] private float _chaseRangePadding = 2f;
@@ -36,6 +39,7 @@ namespace Game.Entities.Units
         private Vector3 _homePosition;
         private bool _isTargetingTeammate;
         private bool _hasWon;
+        private Tween _deathTween;
 
         public event Action<EnemyControl> OnDied;
 
@@ -203,6 +207,7 @@ namespace Game.Entities.Units
 
         protected override void OnDestroy()
         {
+            _deathTween?.Kill();
             _health.OnDeath -= Die;
             base.OnDestroy();
         }
@@ -210,11 +215,21 @@ namespace Game.Entities.Units
         private void Die()
         {
             IsAlive = false;
+            _health.HideBar();
             StopMovement();
             _animator.SetBool(_isShootingHash, false);
             _animator.SetTrigger(_deathHash);
             OnDied?.Invoke(this);
-            Destroy(gameObject, _deathAnimationDuration);
+
+            _navMeshAgent.updatePosition = false;
+            _deathTween = DOTween.Sequence()
+                .AppendInterval(_deathAnimationDuration)
+                .Append(transform.DOMoveY(
+                        transform.position.y - _deathSinkDistance,
+                        _deathSinkDuration)
+                    .SetEase(Ease.InQuad))
+                .OnComplete(() => Destroy(gameObject))
+                .SetLink(gameObject);
         }
     }
 }

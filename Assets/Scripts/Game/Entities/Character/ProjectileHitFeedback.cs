@@ -14,16 +14,27 @@ namespace Game.Entities.Character
         [SerializeField, ColorUsage(true, true)] private Color _hitColor = new(2f, 0.18f, 0f, 1f);
         [SerializeField] private float _flashInDuration = 0.05f;
         [SerializeField] private float _flashOutDuration = 0.14f;
+        [SerializeField] private float _pulseScaleMultiplier = 1.04f;
+        [SerializeField] private float _pulseInDuration = 0.05f;
+        [SerializeField] private float _pulseOutDuration = 0.08f;
+        [SerializeField, ColorUsage(true, true)] private Color _buffColor = new(1.15f, 1.05f, 0.35f, 1f);
+        [SerializeField] private float _buffColorDuration = 0.18f;
 
         private Material[] _materials;
         private Color[] _defaultColors;
         private int[] _colorPropertyIds;
         private ParticleSystem _hitParticleSystem;
         private Tween _flashTween;
+        private Tween _pulseTween;
+        private Tween _buffTween;
         private float _flashAmount;
+        private float _buffAmount;
+        private Vector3 _defaultVisualScale;
 
         private void Awake()
         {
+            _defaultVisualScale = _visualRoot.localScale;
+
             Renderer[] renderers = _visualRoot.GetComponentsInChildren<Renderer>(true);
             List<Material> materials = new();
 
@@ -65,23 +76,63 @@ namespace Game.Entities.Character
                     .SetEase(Ease.InQuad))
                 .OnComplete(() => _flashTween = null)
                 .SetLink(gameObject);
+
+            _pulseTween?.Kill();
+            _pulseTween = DOTween.Sequence()
+                .Append(_visualRoot.DOScale(
+                        _defaultVisualScale * _pulseScaleMultiplier,
+                        _pulseInDuration)
+                    .SetEase(Ease.OutQuad))
+                .Append(_visualRoot.DOScale(_defaultVisualScale, _pulseOutDuration)
+                    .SetEase(Ease.InOutQuad))
+                .OnComplete(() => _pulseTween = null)
+                .SetLink(gameObject);
+        }
+
+        public void SetBuffed(bool isBuffed)
+        {
+            _buffTween?.Kill();
+            _buffTween = DOTween.To(
+                    () => _buffAmount,
+                    SetBuffAmount,
+                    isBuffed ? 1f : 0f,
+                    _buffColorDuration)
+                .SetEase(Ease.OutQuad)
+                .OnComplete(() => _buffTween = null)
+                .SetLink(gameObject);
         }
 
         private void SetFlashAmount(float amount)
         {
             _flashAmount = amount;
+            ApplyColors();
+        }
 
+        private void SetBuffAmount(float amount)
+        {
+            _buffAmount = amount;
+            ApplyColors();
+        }
+
+        private void ApplyColors()
+        {
             for (int i = 0; i < _materials.Length; i++)
             {
+                Color buffedColor = _defaultColors[i] * _buffColor;
+                buffedColor.a = _defaultColors[i].a;
+                Color baseColor = Color.Lerp(_defaultColors[i], buffedColor, _buffAmount);
+
                 _materials[i].SetColor(
                     _colorPropertyIds[i],
-                    Color.Lerp(_defaultColors[i], _hitColor, amount));
+                    Color.Lerp(baseColor, _hitColor, _flashAmount));
             }
         }
 
         private void OnDestroy()
         {
             _flashTween?.Kill();
+            _pulseTween?.Kill();
+            _buffTween?.Kill();
 
             for (int i = 0; i < _materials.Length; i++)
             {

@@ -10,6 +10,7 @@ namespace Game.Entities.Character
         [SerializeField] private Image _backgroundFill;
         [SerializeField] private Image _damageFill;
         [SerializeField] private Image _healthFill;
+        [SerializeField] private GameObject _buffIcon;
 
         [SerializeField] private Color _backgroundColor = new(1f, 0f, 0f);
         [SerializeField] private Color _damageColor = Color.white;
@@ -54,7 +55,19 @@ namespace Game.Entities.Character
 
         public void Init(float healthFill)
         {
+            gameObject.SetActive(true);
             SetFillAmount(healthFill);
+            _buffIcon.SetActive(false);
+        }
+
+        public void Hide()
+        {
+            gameObject.SetActive(false);
+        }
+
+        public void ShowBuff(bool isVisible)
+        {
+            _buffIcon.SetActive(isVisible);
         }
 
         private void LateUpdate()

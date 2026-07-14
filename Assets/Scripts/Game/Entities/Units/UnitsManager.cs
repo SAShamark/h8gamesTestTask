@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using Game.Entities.Spawners;
+using Game.Entities.Character;
 
 namespace Game.Entities.Units
 {
     public class UnitsManager : IDisposable
     {
         private readonly SpawnersManager _spawnersManager;
+        private readonly CharacterControl _characterControl;
         private readonly Dictionary<TeammateControl, EnemyControl> _targetAssignments = new();
         private readonly Dictionary<EnemyControl, TeammateControl> _enemyTargetAssignments = new();
         private readonly HashSet<TeammateControl> _chargingTeammates = new();
@@ -15,12 +17,14 @@ namespace Game.Entities.Units
         private readonly List<TeammateControl> _teammatesToResume = new();
         private readonly List<TeammateControl> _reassignmentBuffer = new();
         private readonly List<EnemyControl> _enemyReassignmentBuffer = new();
+        private bool _resumeChargeAura;
 
         public event Action OnEnemiesDefeated;
 
-        public UnitsManager(SpawnersManager spawnersManager)
+        public UnitsManager(SpawnersManager spawnersManager, CharacterControl characterControl)
         {
             _spawnersManager = spawnersManager;
+            _characterControl = characterControl;
         }
 
         public void Init()
@@ -48,7 +52,7 @@ namespace Game.Entities.Units
 
             foreach (TeammateControl teammate in _spawnersManager.TeammateControls)
             {
-                if (!teammate.IsAlive || !teammate.HasReachedSlot)
+                if (!teammate.IsAlive)
                 {
                     continue;
                 }
@@ -59,6 +63,13 @@ namespace Game.Entities.Units
                 AssignTarget(teammate);
             }
 
+            if (_chargingTeammates.Count == 0)
+            {
+                return;
+            }
+
+            _spawnersManager.SetBarracksSpawning(false);
+
             foreach (EnemyControl enemy in _spawnersManager.EnemyControls)
             {
                 if (enemy.IsAlive)
@@ -66,10 +77,16 @@ namespace Game.Entities.Units
                     AssignTarget(enemy);
                 }
             }
+
+            if (_chargingTeammates.Count > 0)
+            {
+                _characterControl.ActivateChargeAura(_spawnersManager.TeammateControls);
+            }
         }
 
         public void Dispose()
         {
+            _characterControl.DeactivateChargeAura();
             foreach (EnemyControl enemy in _subscribedEnemies)
             {
                 enemy.OnDied -= HandleEnemyDied;
@@ -81,6 +98,8 @@ namespace Game.Entities.Units
 
         public void PlayEnemiesVictory()
         {
+            _resumeChargeAura = _chargingTeammates.Count > 0;
+            _characterControl.DeactivateChargeAura();
             _teammatesToResume.Clear();
             foreach (TeammateControl teammate in _chargingTeammates)
             {
@@ -157,7 +176,13 @@ namespace Game.Entities.Units
                 }
             }
 
+            if (_resumeChargeAura && _chargingTeammates.Count > 0)
+            {
+                _characterControl.ActivateChargeAura(_spawnersManager.TeammateControls);
+            }
+
             _teammatesToResume.Clear();
+            _resumeChargeAura = false;
         }
 
         private void AssignTarget(TeammateControl teammate)
@@ -282,6 +307,7 @@ namespace Game.Entities.Units
 
             if (_spawnersManager.EnemyControls.Count == 0)
             {
+                _characterControl.DeactivateChargeAura();
                 foreach (TeammateControl teammate in _spawnersManager.TeammateControls)
                 {
                     if (teammate.IsAlive)
@@ -323,6 +349,13 @@ namespace Game.Entities.Units
             _subscribedTeammates.Remove(teammate);
             _chargingTeammates.Remove(teammate);
             _targetAssignments.Remove(teammate);
+
+            if (_chargingTeammates.Count == 0)
+            {
+                _characterControl.DeactivateChargeAura();
+                _spawnersManager.SetBarracksSpawning(true);
+            }
+
             _enemyReassignmentBuffer.Clear();
 
             foreach (KeyValuePair<EnemyControl, TeammateControl> assignment in _enemyTargetAssignments)

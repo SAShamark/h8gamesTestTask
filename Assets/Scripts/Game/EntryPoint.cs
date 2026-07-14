@@ -35,7 +35,7 @@ namespace Game
         {
             _characterStartPosition = _characterControl.transform.position;
             _characterStartRotation = _characterControl.transform.rotation;
-            _unitsManager = new UnitsManager(_spawnersManager);
+            _unitsManager = new UnitsManager(_spawnersManager, _characterControl);
 
             var currentLevel = 0;
             _spawnersManager.Init(

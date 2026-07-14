@@ -20,6 +20,7 @@ namespace Game.Entities.Units
         [SerializeField] private float _attackRange = 2.5f;
         [SerializeField] private float _attackInterval = 0.6f;
         [SerializeField] private float _damage = 10f;
+        [SerializeField, Min(1f)] private float _chargeDamageMultiplier = 1.5f;
         [SerializeField] private Projectile _projectilePrefab;
         [SerializeField] private Vector3 _projectileSpawnOffset = new(0f, 1f, 0.45f);
         [SerializeField] private float _projectileSpeed = 18f;
@@ -37,6 +38,7 @@ namespace Game.Entities.Units
         private Vector3 _lastSlotPosition;
         private bool _isInitialized;
         private bool _isCharging;
+        private bool _isChargeBuffed;
         private float _nextAttackTime;
 
         private readonly int _isShootingHash = Animator.StringToHash("IsShooting");
@@ -206,7 +208,20 @@ namespace Game.Entities.Units
         {
             Projectile projectile = _projectilePool.GetFreeElement();
             Vector3 spawnPosition = transform.TransformPoint(_projectileSpawnOffset);
-            projectile.Launch(spawnPosition, _target, _projectileSpeed, _damage, ReturnProjectile);
+            float damage = _isChargeBuffed ? _damage * _chargeDamageMultiplier : _damage;
+            projectile.Launch(spawnPosition, _target, _projectileSpeed, damage, ReturnProjectile);
+        }
+
+        public void SetChargeBuff(bool isBuffed)
+        {
+            if (_isChargeBuffed == isBuffed)
+            {
+                return;
+            }
+
+            _isChargeBuffed = isBuffed;
+            _hitFeedback.SetBuffed(isBuffed);
+            _health.ShowBuff(isBuffed);
         }
 
         private void ReturnProjectile(Projectile projectile)
@@ -269,6 +284,8 @@ namespace Game.Entities.Units
         private void Die()
         {
             IsAlive = false;
+            SetChargeBuff(false);
+            _health.HideBar();
             _isInitialized = false;
             _navMeshAgent.isStopped = true;
             StopAnimation();

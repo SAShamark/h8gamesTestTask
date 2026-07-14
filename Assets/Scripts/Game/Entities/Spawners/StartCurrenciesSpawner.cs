@@ -9,6 +9,8 @@ namespace Game.Entities.Spawners
     [Serializable]
     public class StartCurrenciesSpawner
     {
+        private const float GroundOffset = 0.1f;
+
         [SerializeField] private Item _itemPrefab1;
         [SerializeField] private int _itemsCount1 = 6;
         [SerializeField] private Item _itemPrefab2;
@@ -23,7 +25,10 @@ namespace Game.Entities.Spawners
             _itemsPool1 = new ObjectPool<Item>(_itemPrefab1, _itemsCount1, _itemsContainer);
             _itemsPool2 = new ObjectPool<Item>(_itemPrefab2, _itemsCount2, _itemsContainer);
 
-            Vector3 spawnPosition = SpawnItemsColumn(_itemPrefab1, _itemsCount1, Vector3.zero);
+            Vector3 spawnPosition = SpawnItemsColumn(
+                _itemPrefab1,
+                _itemsCount1,
+                Vector3.up * GroundOffset);
             SpawnItemsColumn(_itemPrefab2, _itemsCount2, spawnPosition);
         }
 

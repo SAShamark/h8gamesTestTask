@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Game.Entities.Units;
 using UI.Managers;
 using UI.Popups;
 using UnityEngine;
@@ -15,6 +17,7 @@ namespace Game.Entities.Character
         [SerializeField] private ShootingLogic _shootingLogic;
         [SerializeField] private CharacterAnimationControl _animationControl;
         [SerializeField] private ProjectileHitFeedback _hitFeedback;
+        [SerializeField] private CharacterChargeAura _chargeAura;
         [SerializeField] private float _aimHeight = 1f;
 
         private FloatingJoystick _joystick;
@@ -98,8 +101,19 @@ namespace Game.Entities.Character
 
         public void PlayVictory()
         {
+            _chargeAura.Deactivate();
             StopGameplay();
             _animationControl.PlayVictory();
+        }
+
+        public void ActivateChargeAura(IReadOnlyList<TeammateControl> teammates)
+        {
+            _chargeAura.Activate(teammates);
+        }
+
+        public void DeactivateChargeAura()
+        {
+            _chargeAura.Deactivate();
         }
 
         public void Respawn(Vector3 position, Quaternion rotation)
@@ -122,6 +136,8 @@ namespace Game.Entities.Character
         {
             IsAlive = false;
             LifeVersion++;
+            _chargeAura.Deactivate();
+            _health.HideBar();
             _inventory.DropAll(transform.position);
             StopGameplay();
             _animationControl.PlayDeath();

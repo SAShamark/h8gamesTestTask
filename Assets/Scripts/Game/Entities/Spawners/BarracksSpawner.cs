@@ -16,6 +16,7 @@ namespace Game.Entities.Spawners
         private readonly List<BarrackControl> _barracks = new();
         private UnitSlots _unitSlots;
         private UnitsSpawner _unitsSpawner;
+        private bool _isSpawningEnabled = true;
 
         public IReadOnlyList<BarrackControl> Barracks => _barracks;
 
@@ -30,7 +31,18 @@ namespace Game.Entities.Spawners
             BarrackControl barrack = Object.Instantiate(_barrackPrefab, position, Quaternion.identity);
             barrack.OnSpawnTeammate += _unitsSpawner.SpawnTeammate;
             barrack.Init(_unitSlots);
+            barrack.SetSpawningEnabled(_isSpawningEnabled);
             _barracks.Add(barrack);
+        }
+
+        public void SetSpawningEnabled(bool isEnabled)
+        {
+            _isSpawningEnabled = isEnabled;
+
+            foreach (BarrackControl barrack in _barracks)
+            {
+                barrack.SetSpawningEnabled(isEnabled);
+            }
         }
 
         public DeliveryArea SpawnNextArea(Transform completedArea)

@@ -51,5 +51,15 @@ namespace Game.Entities.Character
             _healthBarView.ShowHeal(NormalizedHealth);
             OnHealthChanged?.Invoke(NormalizedHealth);
         }
+
+        public void ShowBuff(bool isVisible)
+        {
+            _healthBarView.ShowBuff(isVisible);
+        }
+
+        public void HideBar()
+        {
+            _healthBarView.Hide();
+        }
     }
 }

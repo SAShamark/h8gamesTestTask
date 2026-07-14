@@ -15,6 +15,7 @@ namespace Game.Entities
         private Vector3 _fillDefaultScale;
         private Vector3 _fillDefaultLocalPosition;
         private float _fillDefaultWidth;
+        private bool _isSpawningEnabled = true;
 
         public event Action<Vector3, Transform> OnSpawnTeammate;
         private void Awake()
@@ -33,6 +34,11 @@ namespace Game.Entities
 
         private void Update()
         {
+            if (!_isSpawningEnabled)
+            {
+                return;
+            }
+
             float cooldownStartTime = _nextSpawnTime - _spawnCooldown;
             SetFillProgress(Mathf.InverseLerp(cooldownStartTime, _nextSpawnTime, Time.time));
 
@@ -44,6 +50,17 @@ namespace Game.Entities
             OnSpawnTeammate?.Invoke(_spawnPoint.position, slot);
             _nextSpawnTime = Time.time + _spawnCooldown;
             SetFillProgress(0f);
+        }
+
+        public void SetSpawningEnabled(bool isEnabled)
+        {
+            _isSpawningEnabled = isEnabled;
+            SetFillProgress(0f);
+
+            if (isEnabled)
+            {
+                _nextSpawnTime = Time.time + _spawnCooldown;
+            }
         }
 
         private void SetFillProgress(float progress)

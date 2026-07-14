@@ -38,6 +38,11 @@ namespace Game.Entities.Spawners
             _barracksSpawner.Spawn(position);
         }
 
+        public void SetBarracksSpawning(bool isEnabled)
+        {
+            _barracksSpawner.SetSpawningEnabled(isEnabled);
+        }
+
         public DeliveryArea SpawnNextBarrackArea(Transform completedArea)
         {
             return _barracksSpawner.SpawnNextArea(completedArea);
