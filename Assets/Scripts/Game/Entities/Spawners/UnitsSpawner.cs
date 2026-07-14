@@ -10,6 +10,7 @@ namespace Game.Entities.Spawners
     public class UnitsSpawner
     {
         [SerializeField] private TeammateControl _teammatePrefab;
+        [SerializeField] private Transform _container;
 
         private readonly List<TeammateControl> _teammateControls = new();
         private UnitSlots _unitSlots;
@@ -35,7 +36,11 @@ namespace Game.Entities.Spawners
 
         public void SpawnTeammate(Vector3 position, Transform reservedSlot)
         {
-            TeammateControl teammate = Object.Instantiate(_teammatePrefab, position, Quaternion.identity);
+            TeammateControl teammate = Object.Instantiate(
+                _teammatePrefab,
+                position,
+                Quaternion.identity,
+                _container);
             teammate.Init(_unitSlots, reservedSlot);
             teammate.OnDied += HandleTeammateDied;
             _teammateControls.Add(teammate);

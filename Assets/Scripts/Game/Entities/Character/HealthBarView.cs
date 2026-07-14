@@ -23,12 +23,14 @@ namespace Game.Entities.Character
         [SerializeField] private float _hitPunchDuration = 0.18f;
 
         private Transform _cameraTransform;
+        private Canvas _canvas;
         private Sequence _healthSequence;
         private Vector3 _healthFillDefaultScale;
 
         private void Awake()
         {
-            BindCamera();
+            _canvas = GetComponent<Canvas>();
+            TryBindCamera();
             _healthFillDefaultScale = _healthFill.transform.localScale;
 
             _backgroundFill.color = _backgroundColor;
@@ -36,11 +38,18 @@ namespace Game.Entities.Character
             _healthFill.color = _healthColor;
         }
 
-        private void BindCamera()
+        private bool TryBindCamera()
         {
             Camera mainCamera = Camera.main;
+
+            if (mainCamera == null)
+            {
+                return false;
+            }
+
             _cameraTransform = mainCamera.transform;
-            GetComponent<Canvas>().worldCamera = mainCamera;
+            _canvas.worldCamera = mainCamera;
+            return true;
         }
 
         public void Init(float healthFill)
@@ -50,9 +59,9 @@ namespace Game.Entities.Character
 
         private void LateUpdate()
         {
-            if (_cameraTransform == null)
+            if (_cameraTransform == null && !TryBindCamera())
             {
-                BindCamera();
+                return;
             }
 
             transform.rotation = _cameraTransform.rotation;

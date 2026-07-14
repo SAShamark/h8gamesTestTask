@@ -6,9 +6,12 @@ using Game.Entities.Character;
 using Game.Entities.Spawners;
 using Game.Entities.Units;
 using UI.Managers;
+using UI.Popups;
+using UI.Popups.Variables;
 using UI.Screens;
 using UI.Screens.Variants.Gameplay;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Game
 {
@@ -18,22 +21,27 @@ namespace Game
         [SerializeField] private UnitSlots _unitSlots;
         [SerializeField] private CharacterControl _characterControl;
         [SerializeField] private CameraControl _cameraControl;
+        [SerializeField] private FlagCaptureArea _flagCaptureArea;
         [SerializeField] private SpawnersManager _spawnersManager;
         [SerializeField] private List<BaseArea> _areas;
 
         private UnitsManager _unitsManager;
         private UIManager _uiManager;
         private GameplayScreen _gameplayScreen;
+        private Vector3 _characterStartPosition;
+        private Quaternion _characterStartRotation;
 
         private void Start()
         {
+            _characterStartPosition = _characterControl.transform.position;
+            _characterStartRotation = _characterControl.transform.rotation;
             _unitsManager = new UnitsManager(_spawnersManager);
 
             var currentLevel = 0;
             _spawnersManager.Init(
                 _unitSlots,
                 _levelsConfig.Levels[currentLevel],
-                _levelsConfig.EnemyGroupCount,
+                _levelsConfig.EnemiesPerGroup,
                 _characterControl);
             _unitsManager.Init();
             _cameraControl.Init(_characterControl.transform, _characterControl.MovementLogic);
@@ -43,20 +51,23 @@ namespace Game
             _uiManager.ScreensManager.ShowScreen(ScreenTypes.Gameplay);
             _gameplayScreen = _uiManager.ScreensManager.GetScreen(ScreenTypes.Gameplay) as GameplayScreen;
 
-            _characterControl.Init(_gameplayScreen.Joystick);
-            _gameplayScreen.BindInventory(_characterControl.Inventory);
-            _unitsManager.OnEnemiesDefeated += _characterControl.PlayVictory;
-            _characterControl.Health.OnDeath += HandleCharacterDied;
+            _characterControl.Init(_gameplayScreen.Joystick, _cameraControl);
 
             foreach (BaseArea area in _areas)
             {
                 SubscribeToArea(area);
             }
+
+            _gameplayScreen.BindInventory(_characterControl.Inventory);
+            _unitsManager.OnEnemiesDefeated += HandleEnemiesDefeated;
+            _flagCaptureArea.OnCaptured += HandleFlagCaptured;
+            _characterControl.Health.OnDeath += HandleCharacterDied;
         }
 
         private void OnDestroy()
         {
-            _unitsManager.OnEnemiesDefeated -= _characterControl.PlayVictory;
+            _unitsManager.OnEnemiesDefeated -= HandleEnemiesDefeated;
+            _flagCaptureArea.OnCaptured -= HandleFlagCaptured;
             _characterControl.Health.OnDeath -= HandleCharacterDied;
 
             foreach (BaseArea area in _areas)
@@ -71,6 +82,38 @@ namespace Game
         private void HandleCharacterDied()
         {
             _unitsManager.PlayEnemiesVictory();
+            _uiManager.PopupsManager.ShowPopup(PopupTypes.Result);
+
+            ResultPopup resultPopup = (ResultPopup)_uiManager.PopupsManager.GetPopup(PopupTypes.Result);
+            resultPopup.OnButtonClicked += HandleResultRestartClicked;
+        }
+
+        private void HandleEnemiesDefeated()
+        {
+            _flagCaptureArea.Unlock();
+        }
+
+        private void HandleFlagCaptured()
+        {
+            _characterControl.PlayVictory();
+            _unitsManager.PlayTeammatesVictory();
+            _uiManager.PopupsManager.ShowPopup(PopupTypes.LevelComplete);
+
+            LevelCompletedPopup levelCompletedPopup =
+                (LevelCompletedPopup)_uiManager.PopupsManager.GetPopup(PopupTypes.LevelComplete);
+            levelCompletedPopup.OnButtonClicked += HandleLevelCompleteRestartClicked;
+        }
+
+        private void HandleResultRestartClicked()
+        {
+            _uiManager.PopupsManager.HidePopup(PopupTypes.Result);
+            _characterControl.Respawn(_characterStartPosition, _characterStartRotation);
+            _unitsManager.ResumeAfterCharacterRespawn();
+        }
+
+        private void HandleLevelCompleteRestartClicked()
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
         private void HandleAreaCompleted(BaseArea area)

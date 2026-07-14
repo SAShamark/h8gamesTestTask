@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Game.Entities.Units;
 using Services;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Game
 {
@@ -10,11 +11,11 @@ namespace Game
     public class LevelsConfig : ScriptableObject
     {
         [SerializeField] private List<LevelData> _levels;
-        [SerializeField] private int _enemyGroupCount;
+        [SerializeField, Min(1)] private int _enemiesPerGroup = 6;
         
         public List<LevelData> Levels => _levels;
         
-        public int EnemyGroupCount => _enemyGroupCount;
+        public int EnemiesPerGroup => _enemiesPerGroup;
     }
 
     [Serializable]

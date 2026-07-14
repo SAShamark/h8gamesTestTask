@@ -9,6 +9,7 @@ namespace Game.Entities.Character
         private Action<Projectile> _onComplete;
         private float _speed;
         private float _damage;
+        private int _targetLifeVersion;
 
         public void Launch(Vector3 startPosition, IProjectileTarget target, float speed, float damage,
             Action<Projectile> onComplete)
@@ -16,6 +17,7 @@ namespace Game.Entities.Character
             transform.SetParent(null, true);
             transform.position = startPosition;
             _target = target;
+            _targetLifeVersion = target.LifeVersion;
             _speed = speed;
             _damage = damage;
             _onComplete = onComplete;
@@ -23,7 +25,7 @@ namespace Game.Entities.Character
 
         private void Update()
         {
-            if (!_target.IsAlive)
+            if (!_target.IsAlive || _target.LifeVersion != _targetLifeVersion)
             {
                 Complete();
                 return;
@@ -36,6 +38,7 @@ namespace Game.Entities.Character
             if (direction.sqrMagnitude <= movementDistance * movementDistance)
             {
                 _target.ApplyDamage(_damage);
+                _target.PlayHitFeedback(targetPosition);
                 Complete();
                 return;
             }

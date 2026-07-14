@@ -21,13 +21,14 @@ namespace Game.Entities.Spawners
             _unitsSpawner.TeammateControls;
         public System.Collections.Generic.IReadOnlyList<EnemyControl> EnemyControls => _enemiesSpawner.EnemyControls;
 
-        public void Init(UnitSlots unitSlots, LevelData levelData, int enemyGroupCount, CharacterControl characterControl)
+        public void Init(UnitSlots unitSlots, LevelData levelData, int enemiesPerGroup,
+            CharacterControl characterControl)
         {
             _unitsSpawner.OnTeammateDied += HandleTeammateDied;
             _enemiesSpawner.OnEnemyDied += HandleEnemyDied;
 
             _unitsSpawner.Init(unitSlots);
-            _enemiesSpawner.Init(levelData, enemyGroupCount, characterControl);
+            _enemiesSpawner.Init(levelData, enemiesPerGroup, characterControl);
             _barracksSpawner.Init(unitSlots, _unitsSpawner);
             _startCurrenciesSpawner.Init();
         }

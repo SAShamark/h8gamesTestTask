@@ -47,6 +47,13 @@ namespace Game.Entities.Character
             _animator.SetTrigger(_victoryHash);
         }
 
+        public void ResetToIdle()
+        {
+            _animator.Rebind();
+            _animator.Update(0f);
+            StopLocomotion();
+        }
+
         private void StopLocomotion()
         {
             _animator.SetFloat(_speedHash, 0f);

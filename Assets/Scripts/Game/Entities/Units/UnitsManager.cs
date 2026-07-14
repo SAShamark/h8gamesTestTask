@@ -12,6 +12,7 @@ namespace Game.Entities.Units
         private readonly HashSet<TeammateControl> _chargingTeammates = new();
         private readonly List<EnemyControl> _subscribedEnemies = new();
         private readonly List<TeammateControl> _subscribedTeammates = new();
+        private readonly List<TeammateControl> _teammatesToResume = new();
         private readonly List<TeammateControl> _reassignmentBuffer = new();
         private readonly List<EnemyControl> _enemyReassignmentBuffer = new();
 
@@ -38,6 +39,11 @@ namespace Game.Entities.Units
 
         public void ChargeUnits()
         {
+            if (_chargingTeammates.Count > 0)
+            {
+                return;
+            }
+
             ClearTargetAssignments();
 
             foreach (TeammateControl teammate in _spawnersManager.TeammateControls)
@@ -75,6 +81,15 @@ namespace Game.Entities.Units
 
         public void PlayEnemiesVictory()
         {
+            _teammatesToResume.Clear();
+            foreach (TeammateControl teammate in _chargingTeammates)
+            {
+                if (teammate.IsAlive)
+                {
+                    _teammatesToResume.Add(teammate);
+                }
+            }
+
             ClearTargetAssignments();
 
             foreach (EnemyControl enemy in _spawnersManager.EnemyControls)
@@ -92,6 +107,57 @@ namespace Game.Entities.Units
                     teammate.StopCombat();
                 }
             }
+        }
+
+        public void PlayTeammatesVictory()
+        {
+            foreach (TeammateControl teammate in _spawnersManager.TeammateControls)
+            {
+                if (teammate.IsAlive)
+                {
+                    teammate.PlayVictory();
+                }
+            }
+        }
+
+        public void ResumeAfterCharacterRespawn()
+        {
+            foreach (EnemyControl enemy in _spawnersManager.EnemyControls)
+            {
+                if (enemy.IsAlive)
+                {
+                    enemy.ResumeCombat();
+                }
+            }
+
+            foreach (TeammateControl teammate in _spawnersManager.TeammateControls)
+            {
+                if (!teammate.IsAlive)
+                {
+                    continue;
+                }
+
+                if (!_teammatesToResume.Contains(teammate))
+                {
+                    teammate.StopCharge();
+                    continue;
+                }
+
+                _chargingTeammates.Add(teammate);
+                teammate.OnDied += HandleTeammateDied;
+                _subscribedTeammates.Add(teammate);
+                AssignTarget(teammate);
+            }
+
+            foreach (EnemyControl enemy in _spawnersManager.EnemyControls)
+            {
+                if (enemy.IsAlive)
+                {
+                    AssignTarget(enemy);
+                }
+            }
+
+            _teammatesToResume.Clear();
         }
 
         private void AssignTarget(TeammateControl teammate)
@@ -220,7 +286,7 @@ namespace Game.Entities.Units
                 {
                     if (teammate.IsAlive)
                     {
-                        teammate.PlayVictory();
+                        teammate.StopCombat();
                     }
                 }
 
@@ -229,19 +295,24 @@ namespace Game.Entities.Units
                 return;
             }
 
+            ReassignChargingTeammates();
+        }
+
+        private void ReassignChargingTeammates()
+        {
+            _targetAssignments.Clear();
             _reassignmentBuffer.Clear();
 
-            foreach (KeyValuePair<TeammateControl, EnemyControl> assignment in _targetAssignments)
+            foreach (TeammateControl teammate in _chargingTeammates)
             {
-                if (assignment.Value == enemy)
+                if (teammate.IsAlive)
                 {
-                    _reassignmentBuffer.Add(assignment.Key);
+                    _reassignmentBuffer.Add(teammate);
                 }
             }
 
             foreach (TeammateControl teammate in _reassignmentBuffer)
             {
-                _targetAssignments.Remove(teammate);
                 AssignTarget(teammate);
             }
         }

@@ -9,6 +9,7 @@ namespace Game.Entities
         [Header("References")]
         [SerializeField] private CinemachineCamera _cinemachineCamera;
         [SerializeField] private CinemachineFollow _cinemachineFollow;
+        [SerializeField] private CinemachineBasicMultiChannelPerlin _cinemachineNoise;
         [SerializeField] private Transform _lookAheadTarget;
 
         [Header("Lead")]
@@ -22,8 +23,9 @@ namespace Game.Entities
         [SerializeField] private float _velocityDirectionSmoothTime = 0.08f;
 
         [Header("Damage Shake")]
-        [SerializeField] private float _damageShakeDuration = 0.12f;
-        [SerializeField] private float _damageShakeStrength = 0.12f;
+        [SerializeField] private float _damageShakeDuration = 0.16f;
+        [SerializeField] private float _damageShakeStrength = 0.45f;
+        [SerializeField] private float _damageShakeFrequency = 2.5f;
 
         private Transform _playerTarget;
         private MovementLogic _movementLogic;
@@ -43,6 +45,8 @@ namespace Game.Entities
             _lookAheadTargetPosition = target.position;
             _cinemachineCamera.Follow = _lookAheadTarget;
             _cinemachineCamera.LookAt = _lookAheadTarget;
+            _cinemachineNoise.AmplitudeGain = 0f;
+            _cinemachineNoise.FrequencyGain = _damageShakeFrequency;
         }
 
         public void ShakeOnDamage()
@@ -55,11 +59,13 @@ namespace Game.Entities
             _shakeStrength = strength;
             _shakeDuration = duration;
             _shakeTimer = duration;
+            _cinemachineNoise.AmplitudeGain = strength;
         }
 
         private void LateUpdate()
         {
             MoveLookAheadTarget();
+            UpdateShake();
         }
 
         private void MoveLookAheadTarget()
@@ -74,7 +80,7 @@ namespace Game.Entities
 
             _lookAheadTargetPosition = Vector3.SmoothDamp(_lookAheadTargetPosition, targetPosition,
                 ref _lookAheadTargetMoveVelocity, smoothTime);
-            _lookAheadTarget.position = _lookAheadTargetPosition + CalculateShakeOffset();
+            _lookAheadTarget.position = _lookAheadTargetPosition;
         }
 
         private Vector3 CalculateLeadOffset()
@@ -93,17 +99,17 @@ namespace Game.Entities
             return velocityLead + directionLead;
         }
 
-        private Vector3 CalculateShakeOffset()
+        private void UpdateShake()
         {
             if (_shakeTimer <= 0f)
             {
-                return Vector3.zero;
+                _cinemachineNoise.AmplitudeGain = 0f;
+                return;
             }
 
             _shakeTimer -= Time.deltaTime;
-            float fade = _shakeTimer / _shakeDuration;
-            Vector2 randomOffset = Random.insideUnitCircle * (_shakeStrength * fade);
-            return new Vector3(randomOffset.x, 0f, randomOffset.y);
+            float fade = Mathf.Clamp01(_shakeTimer / _shakeDuration);
+            _cinemachineNoise.AmplitudeGain = _shakeStrength * fade * fade;
         }
     }
 }

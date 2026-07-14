@@ -11,6 +11,7 @@ namespace Game.Entities.Units
     {
         [SerializeField] private Animator _animator;
         [SerializeField] private Health _health;
+        [SerializeField] private ProjectileHitFeedback _hitFeedback;
         [SerializeField] private float _slotStoppingDistance = 0.12f;
         [SerializeField] private float _destinationRefreshDistance = 0.1f;
         [SerializeField] private float _navMeshSampleDistance = 1f;
@@ -48,6 +49,7 @@ namespace Game.Entities.Units
 
         public Health Health => _health;
         public bool IsAlive { get; private set; }
+        public int LifeVersion => 0;
         public bool HasReachedSlot { get; private set; }
         public Vector3 AimPosition => transform.position + Vector3.up * _aimHeight;
 
@@ -116,20 +118,23 @@ namespace Game.Entities.Units
             }
 
             _lastSlotPosition = ReservedSlot.position;
-            HasReachedSlot = false;
+            SetHasReachedSlot(false);
             _navMeshAgent.SetDestination(slotPoint.position);
         }
 
         private void UpdateSlotArrival()
         {
-            HasReachedSlot = !_navMeshAgent.pathPending &&
-                             _navMeshAgent.remainingDistance <= _navMeshAgent.stoppingDistance &&
-                             _navMeshAgent.velocity.sqrMagnitude <=
-                             _movingAnimationThreshold * _movingAnimationThreshold;
+            bool hasReachedSlot = !_navMeshAgent.pathPending &&
+                                  _navMeshAgent.remainingDistance <= _navMeshAgent.stoppingDistance &&
+                                  _navMeshAgent.velocity.sqrMagnitude <=
+                                  _movingAnimationThreshold * _movingAnimationThreshold;
+
+            SetHasReachedSlot(hasReachedSlot);
         }
 
         public void Charge(EnemyControl target)
         {
+            SetHasReachedSlot(false);
             _target = target;
             _isCharging = true;
             _navMeshAgent.stoppingDistance = _attackRange;
@@ -214,15 +219,31 @@ namespace Game.Entities.Units
             _health.ApplyDamage(damage);
         }
 
+        public void PlayHitFeedback(Vector3 hitPosition)
+        {
+            _hitFeedback.Play(hitPosition);
+        }
+
         private void ReturnToSlot()
         {
             _isCharging = false;
-            HasReachedSlot = false;
+            SetHasReachedSlot(false);
             _animator.SetBool(_isShootingHash, false);
             _navMeshAgent.stoppingDistance = _slotStoppingDistance;
             _navMeshAgent.isStopped = false;
             _lastSlotPosition = new Vector3(float.PositiveInfinity, 0f, 0f);
             UpdateDestination();
+        }
+
+        private void SetHasReachedSlot(bool hasReachedSlot)
+        {
+            if (HasReachedSlot == hasReachedSlot)
+            {
+                return;
+            }
+
+            HasReachedSlot = hasReachedSlot;
+            SetSlotOccupied(hasReachedSlot);
         }
 
         private void UpdateMovementAnimation()

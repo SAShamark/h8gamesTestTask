@@ -1,4 +1,6 @@
 using System;
+using UI.Managers;
+using UI.Popups;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -8,24 +10,24 @@ namespace Game.Entities.Character
     public class CharacterControl : MonoBehaviour, IInventoryOwner, IProjectileTarget
     {
         [SerializeField] private Inventory _inventory;
-        [SerializeField] private Health _health;
+        [SerializeField] private CharacterHealth _health;
         [SerializeField] private MovementLogic _movementLogic;
         [SerializeField] private ShootingLogic _shootingLogic;
         [SerializeField] private CharacterAnimationControl _animationControl;
+        [SerializeField] private ProjectileHitFeedback _hitFeedback;
         [SerializeField] private float _aimHeight = 1f;
-        [SerializeField] private float _healthRegenerationDelay = 3f;
-        [SerializeField] private float _healthRegenerationPerSecond = 20f;
 
         private FloatingJoystick _joystick;
+        private CameraControl _cameraControl;
         private Rigidbody _rigidbody;
         private bool _isGameplayActive;
-        private float _lastCombatActivityTime;
 
         public Inventory Inventory => _inventory;
         public Health Health => _health;
         public ShootingLogic ShootingLogic => _shootingLogic;
         public MovementLogic MovementLogic => _movementLogic;
         public bool IsAlive { get; private set; }
+        public int LifeVersion { get; private set; }
         public Vector3 AimPosition => transform.position + Vector3.up * _aimHeight;
 
         private void Awake()
@@ -33,9 +35,10 @@ namespace Game.Entities.Character
             _rigidbody = GetComponent<Rigidbody>();
         }
 
-        public void Init(FloatingJoystick joystick)
+        public void Init(FloatingJoystick joystick, CameraControl cameraControl)
         {
             _joystick = joystick;
+            _cameraControl = cameraControl;
             _health.Init();
             _inventory.Init();
             _movementLogic.Init(_rigidbody);
@@ -43,7 +46,6 @@ namespace Game.Entities.Character
             _animationControl.Init(_movementLogic);
             _isGameplayActive = true;
             IsAlive = true;
-            _lastCombatActivityTime = Time.time;
 
             Subscribes();
         }
@@ -61,10 +63,10 @@ namespace Game.Entities.Character
 
             if (_shootingLogic.IsShooting)
             {
-                _lastCombatActivityTime = Time.time;
+                _health.RegisterCombatActivity();
             }
 
-            RegenerateHealth();
+            _health.Tick(Time.deltaTime);
         }
 
         private void FixedUpdate()
@@ -100,9 +102,26 @@ namespace Game.Entities.Character
             _animationControl.PlayVictory();
         }
 
+        public void Respawn(Vector3 position, Quaternion rotation)
+        {
+            transform.SetPositionAndRotation(position, rotation);
+            _rigidbody.position = position;
+            _rigidbody.rotation = rotation;
+            _rigidbody.linearVelocity = Vector3.zero;
+            _rigidbody.angularVelocity = Vector3.zero;
+            Physics.SyncTransforms();
+
+            _health.Init();
+            _movementLogic.Stop();
+            _animationControl.ResetToIdle();
+            IsAlive = true;
+            _isGameplayActive = true;
+        }
+
         private void HandleDeath()
         {
             IsAlive = false;
+            LifeVersion++;
             _inventory.DropAll(transform.position);
             StopGameplay();
             _animationControl.PlayDeath();
@@ -110,19 +129,13 @@ namespace Game.Entities.Character
 
         public void ApplyDamage(float damage)
         {
-            _lastCombatActivityTime = Time.time;
             _health.ApplyDamage(damage);
         }
 
-        private void RegenerateHealth()
+        public void PlayHitFeedback(Vector3 hitPosition)
         {
-            if (Time.time < _lastCombatActivityTime + _healthRegenerationDelay ||
-                _health.CurrentHealth >= _health.MaxHealth)
-            {
-                return;
-            }
-
-            _health.Heal(_healthRegenerationPerSecond * Time.deltaTime);
+            _hitFeedback.Play(hitPosition);
+            _cameraControl.ShakeOnDamage();
         }
 
         private void StopGameplay()

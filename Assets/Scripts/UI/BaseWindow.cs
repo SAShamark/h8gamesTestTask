@@ -1,6 +1,4 @@
 using System.Threading.Tasks;
-using Audio;
-using Audio.Data;
 using Services;
 using UI.Managers.Components;
 using UnityEngine;
@@ -31,14 +29,6 @@ namespace UI
             {
                 Debug.Log("Popup hide exception: " + exception);
             }
-        }
-        protected void ButtonClickedSound()
-        { 
-            AudioManager.Instance.Play(AudioGroupType.UiSounds, "Button");
-        }
-        protected void CloseButtonClickedSound()
-        {
-            AudioManager.Instance.Play(AudioGroupType.UiSounds, "CloseButton");
         }
     }
 }

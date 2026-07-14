@@ -18,6 +18,7 @@ namespace Game.Entities.Units
         private float _nextAttackTime;
 
         public bool IsTargetInRange { get; private set; }
+        public float AttackRange => _attackRange;
         public float Damage => _damage;
 
         public void Init(Transform owner)

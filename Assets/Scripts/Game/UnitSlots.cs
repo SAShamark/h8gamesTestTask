@@ -47,7 +47,13 @@ namespace Game
 
         public void ReleaseSlot(Transform slot)
         {
+            SetSlotOccupied(slot, false);
             _occupiedSlots.Remove(slot);
+        }
+
+        public void SetSlotOccupied(Transform slot, bool isOccupied)
+        {
+            slot.GetComponent<UnitSlotView>().SetOccupied(isOccupied);
         }
 
         private void CreateSlot()

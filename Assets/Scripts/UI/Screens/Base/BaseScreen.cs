@@ -19,14 +19,11 @@ namespace UI.Screens.Base
                 _backButton.onClick.RemoveAllListeners();
 
                 _backButton.onClick.AddListener(ShowPreviousScreen);
-                _backButton.onClick.AddListener(CloseButtonClickedSound);
             }
         }
 
         protected async void ShowPreviousScreen()
         {
-            CloseButtonClickedSound();
-            
             UIManager.Instance.ScreensManager.ShowPreviousScreen();
         }
 

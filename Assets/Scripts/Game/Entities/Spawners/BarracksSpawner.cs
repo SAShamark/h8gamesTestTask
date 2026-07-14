@@ -38,7 +38,10 @@ namespace Game.Entities.Spawners
             Vector3 position = completedArea.position
                                + completedArea.rotation * _nextBarrackAreaLocalOffset;
 
-            return Object.Instantiate(_barrackAreaPrefab, position, completedArea.rotation);
+            DeliveryArea nextArea = Object.Instantiate(
+                _barrackAreaPrefab, position, completedArea.rotation);
+            nextArea.gameObject.SetActive(true);
+            return nextArea;
         }
 
         public void Dispose()

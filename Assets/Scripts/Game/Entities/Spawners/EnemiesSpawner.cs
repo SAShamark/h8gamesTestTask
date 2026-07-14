@@ -14,14 +14,14 @@ namespace Game.Entities.Spawners
     {
         [SerializeField] private Transform _formationAnchor;
         [SerializeField] private GroundBattleField _groundBattleField;
+        [SerializeField] private Transform _container;
         [SerializeField] private List<EnemyPrefabData> _enemyPrefabs;
 
         [Header("Formation")]
-        [SerializeField, Min(1)] private int _groupsPerRow = 2;
         [SerializeField, Min(1)] private int _unitsPerRow = 2;
         [SerializeField, Min(0.1f)] private float _unitSpacing = 1.1f;
-        [SerializeField, Min(0f)] private float _firstGroupDistance = 2f;
-        [SerializeField, Min(0f)] private float _distanceBetweenGroups = 1.5f;
+        [SerializeField, Min(0f)] private float _groupRadius = 3.5f;
+        [SerializeField] private float _circleStartAngle;
         [SerializeField, Min(0f)] private float _navMeshSampleRadius = 0.35f;
 
         private readonly List<EnemyControl> _enemyControls = new();
@@ -31,16 +31,16 @@ namespace Game.Entities.Spawners
 
         public IReadOnlyList<EnemyControl> EnemyControls => _enemyControls;
 
-        public void Init(LevelData levelData, int groupCount, CharacterControl target)
+        public void Init(LevelData levelData, int enemiesPerGroup, CharacterControl target)
         {
             _target = target;
             List<EnemiesType> enemies = BuildEnemiesList(levelData);
-            SpawnFormation(enemies, Mathf.Max(1, groupCount));
+            SpawnFormation(enemies, Mathf.Max(1, enemiesPerGroup));
         }
 
         public void Spawn(Vector3 position, EnemiesType enemyType = EnemiesType.Standard)
         {
-            SpawnEnemy(enemyType, position, Quaternion.LookRotation(-_formationAnchor.forward));
+            SpawnEnemy(enemyType, position, GetRotationTowardsCharacter(position));
         }
 
         public void Dispose()
@@ -68,42 +68,36 @@ namespace Game.Entities.Spawners
             return enemies;
         }
 
-        private void SpawnFormation(IReadOnlyList<EnemiesType> enemies, int groupCount)
+        private void SpawnFormation(IReadOnlyList<EnemiesType> enemies, int enemiesPerGroup)
         {
             if (enemies.Count == 0)
             {
                 return;
             }
 
-            Vector3 forward = Vector3.ProjectOnPlane(_formationAnchor.forward, Vector3.up).normalized;
-            Vector3 right = Vector3.Cross(Vector3.up, forward);
-            groupCount = Mathf.Min(groupCount, enemies.Count);
-            int unitsPerGroup = Mathf.CeilToInt(enemies.Count / (float)groupCount);
-            int rowsPerGroup = Mathf.CeilToInt(unitsPerGroup / (float)_unitsPerRow);
-            float groupWidth = (_unitsPerRow - 1) * _unitSpacing;
-            float groupDepth = (rowsPerGroup - 1) * _unitSpacing;
-            float horizontalGroupStep = groupWidth + _distanceBetweenGroups;
-            float verticalGroupStep = groupDepth + _distanceBetweenGroups;
+            int groupCount = Mathf.CeilToInt(enemies.Count / (float)enemiesPerGroup);
+            Vector3 circleForward = Vector3.ProjectOnPlane(
+                _formationAnchor.forward, Vector3.up).normalized;
 
             for (int enemyIndex = 0; enemyIndex < enemies.Count; enemyIndex++)
             {
-                int groupIndex = enemyIndex / unitsPerGroup;
-                int indexInGroup = enemyIndex % unitsPerGroup;
-                int groupRow = groupIndex / _groupsPerRow;
-                int groupColumn = groupIndex % _groupsPerRow;
-                int groupsInThisRow = Mathf.Min(_groupsPerRow, groupCount - groupRow * _groupsPerRow);
-                float centeredGroupColumn = groupColumn - (groupsInThisRow - 1) * 0.5f;
+                int groupIndex = enemyIndex / enemiesPerGroup;
+                int indexInGroup = enemyIndex % enemiesPerGroup;
+                int groupStartIndex = groupIndex * enemiesPerGroup;
+                int unitsInGroup = Mathf.Min(enemiesPerGroup, enemies.Count - groupStartIndex);
+                int rowsInGroup = Mathf.CeilToInt(unitsInGroup / (float)_unitsPerRow);
                 int row = indexInGroup / _unitsPerRow;
                 int column = indexInGroup % _unitsPerRow;
-                int groupStartIndex = groupIndex * unitsPerGroup;
-                int unitsInGroup = Mathf.Min(unitsPerGroup, enemies.Count - groupStartIndex);
                 int unitsInRow = Mathf.Min(_unitsPerRow, unitsInGroup - row * _unitsPerRow);
                 float centeredColumn = column - (unitsInRow - 1) * 0.5f;
-                float distanceFromFlag = _firstGroupDistance + groupRow * verticalGroupStep + row * _unitSpacing;
-                float lateralOffset = centeredGroupColumn * horizontalGroupStep + centeredColumn * _unitSpacing;
+                float centeredRow = row - (rowsInGroup - 1) * 0.5f;
+
+                float groupAngle = _circleStartAngle + groupIndex * (360f / groupCount);
+                Vector3 groupForward = Quaternion.AngleAxis(groupAngle, Vector3.up) * circleForward;
+                Vector3 groupRight = Vector3.Cross(Vector3.up, groupForward);
                 Vector3 plannedPosition = _formationAnchor.position
-                                          + forward * distanceFromFlag
-                                          + right * lateralOffset;
+                                          + groupForward * (_groupRadius + centeredRow * _unitSpacing)
+                                          + groupRight * (centeredColumn * _unitSpacing);
 
                 Vector3 spawnPosition = plannedPosition;
                 if (NavMesh.SamplePosition(plannedPosition, out NavMeshHit hit, _navMeshSampleRadius, NavMesh.AllAreas))
@@ -111,13 +105,21 @@ namespace Game.Entities.Spawners
                     spawnPosition = hit.position;
                 }
 
-                SpawnEnemy(enemies[enemyIndex], spawnPosition, Quaternion.LookRotation(-forward));
+                SpawnEnemy(
+                    enemies[enemyIndex], spawnPosition, GetRotationTowardsCharacter(spawnPosition));
             }
+        }
+
+        private Quaternion GetRotationTowardsCharacter(Vector3 spawnPosition)
+        {
+            Vector3 direction = _target.transform.position - spawnPosition;
+            direction.y = 0f;
+            return Quaternion.LookRotation(direction);
         }
 
         private void SpawnEnemy(EnemiesType enemyType, Vector3 position, Quaternion rotation)
         {
-            EnemyControl enemy = Object.Instantiate(GetPrefab(enemyType), position, rotation);
+            EnemyControl enemy = Object.Instantiate(GetPrefab(enemyType), position, rotation, _container);
             enemy.Init(_target);
             enemy.OnDied += HandleEnemyDied;
             _enemyControls.Add(enemy);

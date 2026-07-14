@@ -29,5 +29,10 @@ namespace Game.Entities.Units
                 _isSlotReleased = true;
             }
         }
+
+        protected void SetSlotOccupied(bool isOccupied)
+        {
+            _unitSlots.SetSlotOccupied(_reservedSlot, isOccupied);
+        }
     }
 }

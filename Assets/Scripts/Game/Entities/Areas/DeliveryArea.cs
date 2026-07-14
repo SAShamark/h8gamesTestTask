@@ -145,7 +145,7 @@ namespace Game.Entities.Areas
 
         private void UpdateItemsCountText()
         {
-            _itemsCountText.text = $"{_deliveredItemsCount}/{_requiredItemsCount}";
+            _itemsCountText.text = _requiredItemsCount.ToString();
         }
 
         private void PlayDeliveryHit()

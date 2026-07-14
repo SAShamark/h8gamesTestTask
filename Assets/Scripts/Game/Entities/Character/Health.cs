@@ -19,7 +19,7 @@ namespace Game.Entities.Character
         public event Action<float> OnHealthChanged;
         public event Action OnDeath;
 
-        public void Init()
+        public virtual void Init()
         {
             _currentHealth = _maxHealth;
             _isDead = false;
@@ -27,7 +27,7 @@ namespace Game.Entities.Character
             OnHealthChanged?.Invoke(NormalizedHealth);
         }
 
-        public void ApplyDamage(float damage)
+        public virtual void ApplyDamage(float damage)
         {
             if (_isDead)
             {

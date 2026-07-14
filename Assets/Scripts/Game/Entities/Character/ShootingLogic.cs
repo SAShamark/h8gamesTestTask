@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Game.Entities.Units;
 using Services.ObjectPool;
 using UnityEngine;
@@ -18,14 +19,20 @@ namespace Game.Entities.Character
         [SerializeField] private float _aimRotationSpeed = 540f;
         [SerializeField] private float _aimAngleTolerance = 3f;
         [SerializeField] private float _damagePerUpgrade = 5f;
-        [SerializeField, Range(0.1f, 1f)] private float _shootIntervalMultiplierPerUpgrade = 0.9f;
+        [SerializeField, Range(0.1f, 1f)] private float _shootIntervalMultiplierPerUpgrade = 0.75f;
         [SerializeField] private float _minimumShootInterval = 0.12f;
         [SerializeField] private int _initialPoolSize = 8;
+
+        [Header("Weapon Upgrade")]
+        [SerializeField] private List<GameObject> _weapons;
+        [SerializeField] private Transform _upgradeEffect;
 
         private readonly Collider[] _targetResults = new Collider[32];
         private ObjectPool<Projectile> _projectilePool;
         private Rigidbody _ownerRigidbody;
         private MovementLogic _movementLogic;
+        private ParticleSystem[] _upgradeParticleSystems;
+        private int _currentWeaponIndex;
         private float _nextShotTime;
 
         public bool IsShooting { get; private set; }
@@ -35,6 +42,13 @@ namespace Game.Entities.Character
             _ownerRigidbody = ownerRigidbody;
             _movementLogic = movementLogic;
             _projectilePool = new ObjectPool<Projectile>(_projectilePrefab, _initialPoolSize, _shootPoint);
+            _upgradeParticleSystems = _upgradeEffect.GetComponentsInChildren<ParticleSystem>(true);
+            SetWeapon(0);
+
+            for (int i = 0; i < _upgradeParticleSystems.Length; i++)
+            {
+                _upgradeParticleSystems[i].Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
         }
 
         public void Tick(float deltaTime)
@@ -112,6 +126,33 @@ namespace Game.Entities.Character
         {
             _damage += _damagePerUpgrade;
             _shootInterval = Mathf.Max(_minimumShootInterval, _shootInterval * _shootIntervalMultiplierPerUpgrade);
+
+            if (_currentWeaponIndex < _weapons.Count - 1)
+            {
+                SetWeapon(_currentWeaponIndex + 1);
+            }
+
+            PlayUpgradeEffect();
+        }
+
+        private void SetWeapon(int weaponIndex)
+        {
+            _currentWeaponIndex = weaponIndex;
+
+            for (int i = 0; i < _weapons.Count; i++)
+            {
+                _weapons[i].SetActive(i == _currentWeaponIndex);
+            }
+        }
+
+        private void PlayUpgradeEffect()
+        {
+            for (int i = 0; i < _upgradeParticleSystems.Length; i++)
+            {
+                ParticleSystem particleSystem = _upgradeParticleSystems[i];
+                particleSystem.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+                particleSystem.Play(false);
+            }
         }
 
         public void Stop()

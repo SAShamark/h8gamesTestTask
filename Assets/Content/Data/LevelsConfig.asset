@@ -15,7 +15,5 @@ MonoBehaviour:
   _levels:
   - _enemiesCount:
     - _type: 0
-      _value: 12
-    - _type: 1
-      _value: 0
-  _enemyGroupCount: 3
+      _value: 18
+  _enemiesPerGroup: 6

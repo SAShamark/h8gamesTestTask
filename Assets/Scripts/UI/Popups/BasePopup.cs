@@ -38,7 +38,6 @@ namespace UI.Popups
 
         public virtual async void CloseTrigger()
         {
-            CloseButtonClickedSound();
             if (_animator != null)
             {
                 _canvasGroup.interactable = false;
