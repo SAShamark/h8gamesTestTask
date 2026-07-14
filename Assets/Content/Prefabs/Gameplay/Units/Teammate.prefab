@@ -362,7 +362,7 @@ MonoBehaviour:
   _navMeshSampleDistance: 1
   _attackRange: 8
   _attackInterval: 0.6
-  _damage: 8
+  _damage: 6
   _chargeDamageMultiplier: 1.5
   _projectilePrefab: {fileID: 114000000000000004, guid: 385608897b5f4295a93b024ad6e0635c, type: 3}
   _projectileSpawnOffset: {x: 0, y: 1, z: 0.45}

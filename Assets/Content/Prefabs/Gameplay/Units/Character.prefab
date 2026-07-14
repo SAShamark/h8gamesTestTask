@@ -105,11 +105,11 @@ MonoBehaviour:
     _shootRange: 6
     _shootInterval: 0.35
     _projectileSpeed: 18
-    _damage: 20
+    _damage: 8
     _aimRotationSpeed: 540
     _aimAngleTolerance: 3
-    _damagePerUpgrade: 5
-    _shootIntervalMultiplierPerUpgrade: 0.75
+    _damagePerUpgrade: 3
+    _shootIntervalMultiplierPerUpgrade: 0.5
     _minimumShootInterval: 0.12
     _initialPoolSize: 8
     _weapons:
@@ -209,7 +209,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Entities.Character.CharacterChargeAura
   _areaRenderer: {fileID: 910000000000000024}
-  _radius: 4
+  _radius: 2.5
 --- !u!1 &910000000000000022
 GameObject:
   m_ObjectHideFlags: 0

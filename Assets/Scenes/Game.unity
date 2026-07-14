@@ -1516,8 +1516,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.Entities.Areas.GroundBattleField
   _flag: {fileID: 1673108990}
   _enemies: []
-  _groundHeight: 0.1
-  _dashGroundHeight: 0.11
+  _groundHeight: 0.05
+  _dashGroundHeight: 0.06
   _outlinePadding: 2
   _capSegments: 14
   _fillMaterial: {fileID: 2100000, guid: 5cf4a4af0626e64478baf6f360866e4b, type: 2}
