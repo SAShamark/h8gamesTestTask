@@ -9,6 +9,7 @@ namespace Game.Entities.Areas
     {
         [SerializeField] private Transform _flagCloth;
         [SerializeField] private Renderer _flagRenderer;
+        [SerializeField] private ParticleSystem _winParticle;
         [SerializeField] private float _lowerDistance = 2.5f;
         [SerializeField] private float _lowerDuration = 0.65f;
         [SerializeField] private float _colorDuration = 0.25f;
@@ -72,7 +73,11 @@ namespace Game.Entities.Areas
             _captureSequence.Append(_flagCloth.DOLocalMoveY(raisedPosition, _raiseDuration)
                 .SetEase(Ease.InOutSine));
             _captureSequence.SetLink(gameObject);
-            _captureSequence.OnComplete(() => OnCaptured?.Invoke());
+            _captureSequence.OnComplete(() =>
+            {
+                _winParticle.Play();
+                OnCaptured?.Invoke();
+            });
         }
 
         private void OnDestroy()
