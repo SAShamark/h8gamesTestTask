@@ -137,6 +137,7 @@ namespace Game.Entities.Units
         public void Charge(EnemyControl target)
         {
             SetHasReachedSlot(false);
+            SetSlotOccupied(false);
             _target = target;
             _isCharging = true;
             _navMeshAgent.stoppingDistance = _attackRange;

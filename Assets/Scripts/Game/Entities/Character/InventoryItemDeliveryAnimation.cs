@@ -17,6 +17,7 @@ namespace Game.Entities.Character
         {
             Transform itemTransform = item.Transform;
             itemTransform.DOKill();
+            item.ResetScale();
             itemTransform.SetParent(deliveryTarget.parent, true);
 
             Vector3 targetPosition = deliveryTarget.position + _targetWorldOffset;

@@ -20,6 +20,7 @@ namespace Game.Entities.Character
         {
             Transform itemTransform = item.Transform;
             itemTransform.DOKill();
+            item.ResetScale();
             itemTransform.SetParent(null, true);
 
             float angle = itemIndex * 137.5f + UnityEngine.Random.Range(-12f, 12f);
