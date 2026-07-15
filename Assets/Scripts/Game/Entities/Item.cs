@@ -12,10 +12,10 @@ namespace Game.Entities
         private Collider _collider;
         private BasePoolDestroyable _poolDestroyable;
         private Vector3 _defaultLocalScale;
-        private bool _isCollected;
 
         public Transform Transform => transform;
-        public bool IsCollected => _isCollected;
+        public bool IsCollected { get; private set; }
+
         public CurrencyType CurrencyType => _currencyType;
 
         private void Awake()
@@ -28,14 +28,14 @@ namespace Game.Entities
         public void PrepareForSpawn()
         {
             ResetScale();
-            _isCollected = false;
+            IsCollected = false;
             _collider.enabled = true;
         }
 
         public void MarkCollected()
         {
             ResetScale();
-            _isCollected = true;
+            IsCollected = true;
             _collider.enabled = false;
         }
 
@@ -43,7 +43,7 @@ namespace Game.Entities
         {
             transform.DOKill();
             ResetScale();
-            _isCollected = false;
+            IsCollected = false;
             _collider.enabled = true;
             _poolDestroyable.DestroyObject();
         }

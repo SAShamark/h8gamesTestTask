@@ -1,6 +1,6 @@
+using Game.Entities.Units.Character.Parts;
 using Unity.Cinemachine;
 using UnityEngine;
-using Game.Entities.Character;
 
 namespace Game.Entities
 {

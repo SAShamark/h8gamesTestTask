@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Game.Entities.Areas;
+using Game.Entities.Units.Slots;
 using UnityEngine;
 using Object = UnityEngine.Object;
 

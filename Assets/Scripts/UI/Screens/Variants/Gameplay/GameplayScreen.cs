@@ -1,6 +1,6 @@
 ﻿using UI.Screens.Base;
 using System;
-using Game.Entities.Character;
+using Game.Entities.Units.Character.Parts.Inventory;
 using UI.Widgets;
 using UnityEngine;
 using UnityEngine.UI;

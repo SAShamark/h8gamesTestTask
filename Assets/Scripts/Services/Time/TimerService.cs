@@ -22,7 +22,7 @@ namespace Services.Time
 
         public void Init() => LoadTimers();
 
-        internal void Update() => CheckTimers();
+        internal void Tick() => CheckTimers();
         
         public bool CheckDailyVisit()
         {

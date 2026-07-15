@@ -1,11 +1,11 @@
 using System;
 using DG.Tweening;
-using Game.Entities.Character;
+using Game.Entities.Units.Character;
 using UnityEngine;
 
 namespace Game.Entities.Areas
 {
-    public class FlagCaptureArea : MonoBehaviour
+    public class FlagCaptureArea : BaseArea
     {
         [SerializeField] private Transform _flagCloth;
         [SerializeField] private Renderer _flagRenderer;
@@ -38,13 +38,8 @@ namespace Game.Entities.Areas
             }
         }
 
-        private void OnTriggerEnter(Collider other)
+        protected override void HandleCharacterEnter(CharacterControl character)
         {
-            if (!other.TryGetComponent(out CharacterControl character))
-            {
-                return;
-            }
-
             _isCharacterInside = true;
 
             if (_isUnlocked && character.IsAlive)
@@ -53,12 +48,9 @@ namespace Game.Entities.Areas
             }
         }
 
-        private void OnTriggerExit(Collider other)
+        protected override void HandleCharacterExit(CharacterControl character)
         {
-            if (other.TryGetComponent(out CharacterControl _))
-            {
-                _isCharacterInside = false;
-            }
+            _isCharacterInside = false;
         }
 
         private void Capture()

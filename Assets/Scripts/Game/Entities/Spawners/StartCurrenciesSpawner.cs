@@ -1,5 +1,4 @@
 using System;
-using Game.Entities.Character;
 using Services.Currency;
 using Services.ObjectPool;
 using UnityEngine;
@@ -25,10 +24,7 @@ namespace Game.Entities.Spawners
             _itemsPool1 = new ObjectPool<Item>(_itemPrefab1, _itemsCount1, _itemsContainer);
             _itemsPool2 = new ObjectPool<Item>(_itemPrefab2, _itemsCount2, _itemsContainer);
 
-            Vector3 spawnPosition = SpawnItemsColumn(
-                _itemPrefab1,
-                _itemsCount1,
-                Vector3.up * GroundOffset);
+            Vector3 spawnPosition = SpawnItemsColumn(_itemPrefab1, _itemsCount1, Vector3.up * GroundOffset);
             SpawnItemsColumn(_itemPrefab2, _itemsCount2, spawnPosition);
         }
 
@@ -63,6 +59,11 @@ namespace Game.Entities.Spawners
 
             item.PrepareForSpawn();
             item.transform.position = worldPosition;
+        }
+
+        public void SpawnDroppedItem(CurrencyType currencyType, Vector3 groundPosition)
+        {
+            SpawnItem(currencyType, groundPosition + Vector3.up * GroundOffset);
         }
     }
 }

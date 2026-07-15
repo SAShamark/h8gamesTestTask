@@ -1,5 +1,5 @@
 using System;
-using Game.Entities.Character;
+using Game.Entities.Units.Character;
 using UnityEngine;
 
 namespace Game.Entities.Areas
@@ -17,6 +17,7 @@ namespace Game.Entities.Areas
         {
             if (other.TryGetComponent(out CharacterControl characterControl))
             {
+                HandleCharacterEnter(characterControl);
                 OnCharacterEnter?.Invoke(this, characterControl);
             }
         }
@@ -25,8 +26,17 @@ namespace Game.Entities.Areas
         {
             if (other.TryGetComponent(out CharacterControl characterControl))
             {
+                HandleCharacterExit(characterControl);
                 OnCharacterExit?.Invoke(this, characterControl);
             }
+        }
+
+        protected virtual void HandleCharacterEnter(CharacterControl character)
+        {
+        }
+
+        protected virtual void HandleCharacterExit(CharacterControl character)
+        {
         }
 
         protected void NotifyCompleted()

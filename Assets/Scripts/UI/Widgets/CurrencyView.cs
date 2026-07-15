@@ -1,5 +1,5 @@
 using DG.Tweening;
-using Game.Entities.Character;
+using Game.Entities.Units.Character.Parts.Inventory;
 using Services;
 using Services.Currency;
 using TMPro;

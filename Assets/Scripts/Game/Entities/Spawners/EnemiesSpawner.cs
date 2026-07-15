@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Game.Entities.Areas;
-using Game.Entities.Character;
 using Game.Entities.Units;
+using Game.Entities.Units.Character;
+using Game.Entities.Units.Enemies;
 using UnityEngine;
 using UnityEngine.AI;
 using Object = UnityEngine.Object;

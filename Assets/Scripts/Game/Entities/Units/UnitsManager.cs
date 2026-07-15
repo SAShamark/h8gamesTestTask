@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Game.Entities.Spawners;
-using Game.Entities.Character;
+using Game.Entities.Units.Character;
+using Game.Entities.Units.Enemies;
+using Game.Entities.Units.Teammates;
 
 namespace Game.Entities.Units
 {

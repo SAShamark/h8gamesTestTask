@@ -1,5 +1,5 @@
 using System;
-using Game.Entities.Units;
+using Game.Entities.Units.Slots;
 using UnityEngine;
 
 namespace Game.Entities
@@ -33,6 +33,11 @@ namespace Game.Entities
         }
 
         private void Update()
+        {
+            UpdateSpawning();
+        }
+
+        private void UpdateSpawning()
         {
             if (!_isSpawningEnabled)
             {

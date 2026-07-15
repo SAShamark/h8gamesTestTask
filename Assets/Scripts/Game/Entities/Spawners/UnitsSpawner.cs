@@ -1,56 +1,67 @@
 using System;
 using System.Collections.Generic;
-using Game.Entities.Units;
+using Game.Entities.Units.Character;
+using Game.Entities.Units.Enemies;
+using Game.Entities.Units.Slots;
+using Game.Entities.Units.Teammates;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Game.Entities.Spawners
 {
     [Serializable]
-    public class UnitsSpawner
+    public class UnitsSpawner : IDisposable
     {
-        [SerializeField] private TeammateControl _teammatePrefab;
-        [SerializeField] private Transform _container;
-
-        private readonly List<TeammateControl> _teammateControls = new();
-        private UnitSlots _unitSlots;
+        [SerializeField] private TeammatesSpawner _teammatesSpawner;
+        [SerializeField] private EnemiesSpawner _enemiesSpawner;
 
         public event Action<TeammateControl> OnTeammateDied;
+        public event Action<EnemyControl> OnEnemyDied;
 
-        public IReadOnlyList<TeammateControl> TeammateControls => _teammateControls;
+        public IReadOnlyList<TeammateControl> TeammateControls => _teammatesSpawner.TeammateControls;
+        public IReadOnlyList<EnemyControl> EnemyControls => _enemiesSpawner.EnemyControls;
 
-        public void Init(UnitSlots unitSlots)
+        public void Init(UnitSlots unitSlots, LevelData levelData, int enemiesPerGroup,
+            CharacterControl characterControl)
         {
-            _unitSlots = unitSlots;
+            _teammatesSpawner.OnTeammateDied += HandleTeammateDied;
+            _enemiesSpawner.OnEnemyDied += HandleEnemyDied;
+
+            _teammatesSpawner.Init(unitSlots);
+            _enemiesSpawner.Init(levelData, enemiesPerGroup, characterControl);
         }
 
         public void SpawnTeammate(Vector3 position)
         {
-            if (!_unitSlots.TryReserveSlot(out Transform reservedSlot))
-            {
-                return;
-            }
-
-            SpawnTeammate(position, reservedSlot);
+            _teammatesSpawner.Spawn(position);
         }
 
         public void SpawnTeammate(Vector3 position, Transform reservedSlot)
         {
-            TeammateControl teammate = Object.Instantiate(
-                _teammatePrefab,
-                position,
-                Quaternion.identity,
-                _container);
-            teammate.Init(_unitSlots, reservedSlot);
-            teammate.OnDied += HandleTeammateDied;
-            _teammateControls.Add(teammate);
+            _teammatesSpawner.Spawn(position, reservedSlot);
+        }
+
+        public void SpawnEnemy(Vector3 position)
+        {
+            _enemiesSpawner.Spawn(position);
+        }
+
+        public void Dispose()
+        {
+            _teammatesSpawner.OnTeammateDied -= HandleTeammateDied;
+            _enemiesSpawner.OnEnemyDied -= HandleEnemyDied;
+
+            _teammatesSpawner.Dispose();
+            _enemiesSpawner.Dispose();
         }
 
         private void HandleTeammateDied(TeammateControl teammate)
         {
-            teammate.OnDied -= HandleTeammateDied;
-            _teammateControls.Remove(teammate);
             OnTeammateDied?.Invoke(teammate);
+        }
+
+        private void HandleEnemyDied(EnemyControl enemy)
+        {
+            OnEnemyDied?.Invoke(enemy);
         }
     }
 }

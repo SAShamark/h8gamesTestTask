@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 7920069612964845901}
   - component: {fileID: 2152000565394509418}
   - component: {fileID: 900000000000000003}
-  - component: {fileID: 910000000000000021}
   m_Layer: 0
   m_Name: Character
   m_TagString: Untagged
@@ -122,7 +121,9 @@ MonoBehaviour:
     _speedDampTime: 0.12
     _movingThreshold: 0.08
   _hitFeedback: {fileID: 900000000000000003}
-  _chargeAura: {fileID: 910000000000000021}
+  _chargeAura:
+    _areaRenderer: {fileID: 910000000000000024}
+    _radius: 2.5
   _aimHeight: 1
 --- !u!54 &7920069612964845901
 Rigidbody:
@@ -196,20 +197,6 @@ MonoBehaviour:
   _pulseOutDuration: 0.2
   _buffColor: {r: 0, g: 0.064869836, b: 1.5353403, a: 1}
   _buffColorDuration: 0.18
---- !u!114 &910000000000000021
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 194544996815099056}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c34812f4b47e4f48b1e0ea3b0f1f64b2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.Entities.Character.CharacterChargeAura
-  _areaRenderer: {fileID: 910000000000000024}
-  _radius: 2.5
 --- !u!1 &910000000000000022
 GameObject:
   m_ObjectHideFlags: 0

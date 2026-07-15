@@ -21,7 +21,7 @@ public class ServicesManager : MonoSingleton<ServicesManager>
 
     private void Update()
     {
-        TimerService.Update();
+        TimerService.Tick();
     }
 
     private void OnApplicationPause(bool pause) => TimerService.OnApplicationPause(pause);

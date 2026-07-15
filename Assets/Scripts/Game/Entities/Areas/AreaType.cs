@@ -7,5 +7,6 @@ namespace Game.Entities.Areas
         SlotsUpgrade = 2,
         GunUpgrade = 3,
         Charge = 4,
+        FlagCapture = 5,
     }
 }

@@ -2960,7 +2960,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1428837647}
-  - component: {fileID: 1428837646}
   m_Layer: 0
   m_Name: GameObjects
   m_TagString: Untagged
@@ -2968,54 +2967,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1428837646
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1428837645}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 37e5fc9c700a4afcb160a7192b368dbf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.GameplayManager
-  _levelsConfig: {fileID: 11400000, guid: 5f362ab5ff82ef041ae6a3ba6df78a2f, type: 2}
-  _unitSlots: {fileID: 1895719937}
-  _characterControl: {fileID: 677186839}
-  _cameraControl: {fileID: 330585548}
-  _flagCaptureArea: {fileID: 1673108991}
-  _spawnersManager:
-    _startCurrenciesSpawner:
-      _itemPrefab1: {fileID: 5983086904869013646, guid: 6457c6ca2ff1df34faeb1965220c7a0c, type: 3}
-      _itemsCount1: 10
-      _itemPrefab2: {fileID: 6315978548399256231, guid: fb9f415a1f2eb8b45923cc46f5256e7a, type: 3}
-      _itemsCount2: 10
-      _itemsContainer: {fileID: 808652850}
-    _unitsSpawner:
-      _teammatePrefab: {fileID: 3395609538782879198, guid: 333b7245e230efc4dbe4061b7bc59bc7, type: 3}
-      _container: {fileID: 2140007830}
-    _enemiesSpawner:
-      _formationAnchor: {fileID: 1673108990}
-      _groundBattleField: {fileID: 1481000003}
-      _container: {fileID: 457023098}
-      _enemyPrefabs:
-      - _type: 0
-        _prefab: {fileID: 7572008494919838268, guid: 50f0e5af82102534b907605dba1cda28, type: 3}
-      _unitsPerRow: 2
-      _unitSpacing: 1.15
-      _groupRadius: 3.5
-      _circleStartAngle: 0
-      _navMeshSampleRadius: 1
-    _barracksSpawner:
-      _barrackPrefab: {fileID: 7874707608093711576, guid: 1d30506c441b4dd4bb73b84e69e547d7, type: 3}
-      _barrackAreaPrefab: {fileID: 1879317067}
-      _nextBarrackAreaLocalOffset: {x: 3.2, y: 0, z: 0}
-  _areas:
-  - {fileID: 1879317067}
-  - {fileID: 1933225628}
-  - {fileID: 1830350687}
-  - {fileID: 1723293320}
 --- !u!4 &1428837647
 Transform:
   m_ObjectHideFlags: 0
@@ -3430,6 +3381,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71aa47e989f84e83981da594fbd56bf0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Entities.Areas.FlagCaptureArea
+  _areaType: 5
   _flagCloth: {fileID: 398152918}
   _flagRenderer: {fileID: 398152920}
   _lowerDistance: 2.5
@@ -3609,6 +3561,87 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1743244500}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1751799120
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1751799122}
+  - component: {fileID: 1751799121}
+  m_Layer: 0
+  m_Name: ---EntryPoint---
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1751799121
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1751799120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37e5fc9c700a4afcb160a7192b368dbf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.GameplayManager
+  _levelConfig: {fileID: 0}
+  _unitSlots: {fileID: 1895719937}
+  _characterControl: {fileID: 677186839}
+  _cameraControl: {fileID: 330585548}
+  _flagCaptureArea: {fileID: 1673108991}
+  _spawnersManager:
+    _startCurrenciesSpawner:
+      _itemPrefab1: {fileID: 5983086904869013646, guid: 6457c6ca2ff1df34faeb1965220c7a0c, type: 3}
+      _itemsCount1: 10
+      _itemPrefab2: {fileID: 6315978548399256231, guid: fb9f415a1f2eb8b45923cc46f5256e7a, type: 3}
+      _itemsCount2: 10
+      _itemsContainer: {fileID: 808652850}
+    _unitsSpawner:
+      _teammatesSpawner:
+        _teammatePrefab: {fileID: 3395609538782879198, guid: 333b7245e230efc4dbe4061b7bc59bc7, type: 3}
+        _container: {fileID: 2140007830}
+      _enemiesSpawner:
+        _formationAnchor: {fileID: 1673108990}
+        _groundBattleField: {fileID: 1481000003}
+        _container: {fileID: 457023098}
+        _enemyPrefabs:
+        - _type: 0
+          _prefab: {fileID: 7572008494919838268, guid: 50f0e5af82102534b907605dba1cda28, type: 3}
+        _unitsPerRow: 2
+        _unitSpacing: 1.15
+        _groupRadius: 3.5
+        _circleStartAngle: 0
+        _navMeshSampleRadius: 1
+    _barracksSpawner:
+      _barrackPrefab: {fileID: 7874707608093711576, guid: 1d30506c441b4dd4bb73b84e69e547d7, type: 3}
+      _barrackAreaPrefab: {fileID: 1879317067}
+      _nextBarrackAreaLocalOffset: {x: 3.2, y: 0, z: 0}
+  _areas:
+  - {fileID: 1879317067}
+  - {fileID: 1933225628}
+  - {fileID: 1830350687}
+  - {fileID: 1723293320}
+--- !u!4 &1751799122
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1751799120}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -5503,10 +5536,11 @@ PrefabInstance:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 1751799122}
   - {fileID: 1813869086}
+  - {fileID: 1428837647}
+  - {fileID: 817577847}
+  - {fileID: 44976607}
   - {fileID: 410087041}
   - {fileID: 832575519}
-  - {fileID: 817577847}
   - {fileID: 1743244503}
-  - {fileID: 1428837647}
-  - {fileID: 44976607}
