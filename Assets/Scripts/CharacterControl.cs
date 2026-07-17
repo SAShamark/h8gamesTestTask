@@ -13,8 +13,11 @@ public class CharacterControl : MonoBehaviour
     }
 
     [Header("Movement")]
+    [SerializeField] private CameraControl _cameraControl;
     [SerializeField] private float _moveSpeed = 4f;
+    [SerializeField] private float _sprintSpeed = 7f;
     [SerializeField] private float _acceleration = 18f;
+    [SerializeField] private float _rotationSharpness = 18f;
 
     [Header("Recovery")]
     [SerializeField] private float _minimumRecoveryDelay = 0.65f;
@@ -75,10 +78,25 @@ public class CharacterControl : MonoBehaviour
     {
         _state = CharacterState.Thrown;
         _rigidbody.isKinematic = false;
-        _rigidbody.constraints = RigidbodyConstraints.None;
+        _rigidbody.constraints = _defaultConstraints;
         _rigidbody.velocity = velocity;
-        _rigidbody.angularVelocity = angularVelocity;
+        _rigidbody.angularVelocity = Vector3.zero;
         _recoveryRoutine = StartCoroutine(RecoverAfterThrow());
+    }
+
+    public void CancelCapture()
+    {
+        if (_state != CharacterState.Captured)
+        {
+            return;
+        }
+
+        _rigidbody.isKinematic = false;
+        _rigidbody.velocity = Vector3.zero;
+        _rigidbody.angularVelocity = Vector3.zero;
+        _rigidbody.constraints = _defaultConstraints;
+        _horizontalVelocity = Vector3.zero;
+        _state = CharacterState.Active;
     }
 
     private void UpdateMovement()
@@ -90,8 +108,12 @@ public class CharacterControl : MonoBehaviour
 
         Vector2 input = new(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         input = Vector2.ClampMagnitude(input, 1f);
-        Vector3 targetVelocity = new(input.x, 0f, input.y);
-        targetVelocity *= _moveSpeed;
+        Vector3 targetDirection = _cameraControl.GetMovementForward() * input.y +
+                                  _cameraControl.GetMovementRight() * input.x;
+        targetDirection = Vector3.ClampMagnitude(targetDirection, 1f);
+        float moveSpeed = Input.GetKey(KeyCode.LeftShift) ? _sprintSpeed : _moveSpeed;
+        Vector3 targetVelocity = targetDirection * moveSpeed;
+
         _horizontalVelocity = Vector3.MoveTowards(_horizontalVelocity, targetVelocity,
             _acceleration * Time.fixedDeltaTime);
 
@@ -99,6 +121,28 @@ public class CharacterControl : MonoBehaviour
         velocity.x = _horizontalVelocity.x;
         velocity.z = _horizontalVelocity.z;
         _rigidbody.velocity = velocity;
+
+        UpdateRotation(targetDirection);
+    }
+
+    private void UpdateRotation(Vector3 targetDirection)
+    {
+        Quaternion targetRotation = _cameraControl.IsFirstPerson
+            ? _cameraControl.GetYawRotation()
+            : GetThirdPersonRotation(targetDirection);
+
+        _rigidbody.MoveRotation(Quaternion.Slerp(_rigidbody.rotation, targetRotation,
+            1f - Mathf.Exp(-_rotationSharpness * Time.fixedDeltaTime)));
+    }
+
+    private Quaternion GetThirdPersonRotation(Vector3 targetDirection)
+    {
+        if (targetDirection.sqrMagnitude < 0.001f)
+        {
+            return _rigidbody.rotation;
+        }
+
+        return Quaternion.LookRotation(targetDirection, Vector3.up);
     }
 
     private IEnumerator RecoverAfterThrow()
