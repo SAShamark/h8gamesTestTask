@@ -8,7 +8,8 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: FocusedExplosion_01_WaveHeat_03
-  m_Shader: {fileID: -6465566751694194690, guid: d60b8f608029b6d429577b2c013a4542, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: d60b8f608029b6d429577b2c013a4542,
+    type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
@@ -19,8 +20,7 @@ Material:
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
-  disabledShaderPasses:
-  - MOTIONVECTORS
+  disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -148,7 +148,6 @@ Material:
     - _FinalColor: {r: 1, g: 1, b: 1, a: 1}
     - _RampColorTint: {r: 0.8627451, g: 0.8980392, b: 1, a: 1}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!114 &2822150004779011370
 MonoBehaviour:
   m_ObjectHideFlags: 11
@@ -161,4 +160,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 10
+  version: 7

@@ -20,7 +20,7 @@ namespace RagdollMecanimMixer {
 
         public float mass = 70;
         public int layer;
-        public PhysicsMaterial physicMaterial;
+        public PhysicMaterial physicMaterial;
         public float spring = 1000;
         public float damper = 10;
 

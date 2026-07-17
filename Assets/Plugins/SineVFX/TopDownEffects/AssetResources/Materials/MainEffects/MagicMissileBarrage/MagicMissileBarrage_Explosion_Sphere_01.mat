@@ -8,7 +8,8 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: MagicMissileBarrage_Explosion_Sphere_01
-  m_Shader: {fileID: -6465566751694194690, guid: 684cc95f61187234c95586b652bee33a, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: 684cc95f61187234c95586b652bee33a,
+    type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
@@ -19,14 +20,12 @@ Material:
   - _DEPTHFADEFLIP_ON
   - _DEPTHFADEMAXMODE_ON
   - _DISSOLVENOISEFLIP_ON
-  - _EMISSION
-  m_LightmapFlags: 2
+  m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
-  disabledShaderPasses:
-  - MOTIONVECTORS
+  disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -146,7 +145,6 @@ Material:
     - _FinalColor: {r: 1, g: 1, b: 1, a: 1}
     - _RampColorTint: {r: 0.7607843, g: 0.5803922, b: 1, a: 1}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!114 &7356620227756260065
 MonoBehaviour:
   m_ObjectHideFlags: 11
@@ -159,4 +157,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 10
+  version: 7

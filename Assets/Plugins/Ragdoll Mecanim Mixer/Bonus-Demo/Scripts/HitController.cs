@@ -91,7 +91,7 @@ namespace FightDemo {
         private void LateUpdate() {
             if (dead) {
                 deadTimer -= Time.deltaTime;
-                if (ramecanMixer.RootBoneRb.linearVelocity.magnitude > 0.4f || ramecanMixer.RootBoneRb.angularVelocity.magnitude > 2f) deadTimer = deadTime;
+                if (ramecanMixer.RootBoneRb.velocity.magnitude > 0.4f || ramecanMixer.RootBoneRb.angularVelocity.magnitude > 2f) deadTimer = deadTime;
                 Vector3 revivePos = ramecanMixer.RootBoneTr.position;
                 rb.position = new Vector3(revivePos.x, rb.position.y, revivePos.z);
                 if (deadTimer <= 0) {
@@ -101,7 +101,7 @@ namespace FightDemo {
         }
 
         public void Revive() {
-            if (ramecanMixer.RootBoneRb.linearVelocity.magnitude > 0.4f || ramecanMixer.RootBoneRb.angularVelocity.magnitude > 2f) return;
+            if (ramecanMixer.RootBoneRb.velocity.magnitude > 0.4f || ramecanMixer.RootBoneRb.angularVelocity.magnitude > 2f) return;
             Vector3 reviveDir = ramecanMixer.RootBoneTr.forward;
             Quaternion reviveRot = Quaternion.LookRotation(-reviveDir, Vector3.up);
             rb.rotation = Quaternion.Euler(0, reviveRot.eulerAngles.y, 0);

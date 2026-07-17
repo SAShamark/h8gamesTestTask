@@ -44,7 +44,7 @@ namespace RagdollMecanimMixer {
             set {
                 rigidbody.isKinematic = value;
                 if(value == false) {
-                    rigidbody.linearVelocity = kinVelocity;
+                    rigidbody.velocity = kinVelocity;
                     rigidbody.angularVelocity = kinAngularVelocity;
                 }
             }

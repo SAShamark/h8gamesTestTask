@@ -83,11 +83,11 @@ namespace RagdollMecanimMixer {
                     if (bone.positionAccuracy > 0 && !bone.withoutAnimation) {
                         float force = Vector3.Distance(bone.animPosition, bone.rigidbody.position) * bone.positionDriveSpring * bone.positionAccuracy;
                         Vector3 direction = (bone.animPosition - bone.rigidbody.position).normalized;
-                        Vector3 velocity = bone.rigidbody.linearVelocity;
+                        Vector3 velocity = bone.rigidbody.velocity;
                         bone.rigidbody.AddForce(force * direction - velocity * bone.positionDriveDamper, ForceMode.Acceleration);
                     }
 
-                    bone.kinVelocity = bone.rigidbody.linearVelocity;
+                    bone.kinVelocity = bone.rigidbody.velocity;
                     bone.kinAngularVelocity = bone.rigidbody.angularVelocity;
                 } else {
                     //calculate velocity when isKinematic

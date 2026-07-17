@@ -8,20 +8,19 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: WallOfFlames_FlamesGround_01
-  m_Shader: {fileID: -6465566751694194690, guid: 31ebde7ddd8288e4aad40ae287173416, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: 31ebde7ddd8288e4aad40ae287173416,
+    type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _RAMPENABLED_ON
-  m_InvalidKeywords:
-  - _EMISSION
-  m_LightmapFlags: 2
+  m_InvalidKeywords: []
+  m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
-  disabledShaderPasses:
-  - MOTIONVECTORS
+  disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -243,7 +242,6 @@ Material:
     - _RampColorTint: {r: 1, g: 1, b: 1, a: 1}
     - _Vector2: {r: 1, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!114 &7994673990528731689
 MonoBehaviour:
   m_ObjectHideFlags: 11
@@ -256,4 +254,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 10
+  version: 7

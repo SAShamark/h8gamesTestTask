@@ -23,7 +23,7 @@ namespace RagdollMecanimMixer {
         private void GeneralSettings() {
             tgt.layer = EditorGUILayout.LayerField("Layer", tgt.layer);
             tgt.mass = EditorGUILayout.FloatField("Mass", tgt.mass);
-            tgt.physicMaterial = (PhysicsMaterial)EditorGUILayout.ObjectField("Material", tgt.physicMaterial, typeof(PhysicsMaterial), false);
+            tgt.physicMaterial = (PhysicMaterial)EditorGUILayout.ObjectField("Material", tgt.physicMaterial, typeof(PhysicMaterial), false);
             tgt.spring = EditorGUILayout.FloatField("Spring", tgt.spring);
             tgt.damper = EditorGUILayout.FloatField("Damper", tgt.damper);
         }
