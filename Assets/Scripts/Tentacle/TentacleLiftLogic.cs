@@ -45,7 +45,7 @@ namespace Tentacle
 
         public IEnumerator LiftCapturedCharacter(
             Transform[] bones,
-            CharacterControl character,
+            ICapturableCharacter character,
             Transform target,
             Transform liftOrigin)
         {
@@ -330,7 +330,7 @@ namespace Tentacle
 
         private IEnumerator ShakeCapturedCharacterAtTop(
             Transform[] bones,
-            CharacterControl character,
+            ICapturableCharacter character,
             Vector3 rootPosition,
             Vector3 liftedPosition,
             Quaternion liftedRotation,
@@ -386,7 +386,7 @@ namespace Tentacle
 
         private IEnumerator UnwindAndThrowCharacter(
             Transform[] bones,
-            CharacterControl character,
+            ICapturableCharacter character,
             Vector3 rootPosition,
             Vector3 liftedPosition,
             Quaternion liftedRotation,
@@ -470,7 +470,7 @@ namespace Tentacle
         }
 
         private void ThrowCharacter(
-            CharacterControl character,
+            ICapturableCharacter character,
             Vector3 releaseVelocity)
         {
             character.Throw(releaseVelocity, Vector3.zero);
@@ -478,7 +478,7 @@ namespace Tentacle
 
         private static bool HasValidInput(
             Transform[] bones,
-            CharacterControl character,
+            ICapturableCharacter character,
             Transform target,
             Transform liftOrigin)
         {

@@ -37,7 +37,7 @@ namespace Tentacle
         private Vector3[] _idleLocalPositions;
         private Quaternion[] _idleLocalRotations;
         private Coroutine _grabRoutine;
-        private CharacterControl _capturedCharacter;
+        private ICapturableCharacter _capturedCharacter;
         private bool _isGrabbing;
         private bool _isAttacking;
         private bool _hasCommittedCapture;
@@ -300,7 +300,7 @@ namespace Tentacle
 
         private bool CaptureCharacter(Transform target)
         {
-            CharacterControl character = target.GetComponentInParent<CharacterControl>();
+            ICapturableCharacter character = target.GetComponentInParent<ICapturableCharacter>();
 
             if (character == null || !character.TryBeginCapture())
             {

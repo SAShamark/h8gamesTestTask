@@ -53,6 +53,7 @@ namespace Tentacle
             if (_captureLogic.IsBusy)
             {
                 _wasCaptureBusy = true;
+                RotateTowards(targetPosition);
 
                 if (_captureLogic.CanCancelForDistance &&
                     !_captureLogic.IsInGrabRadius(transform.position, targetPosition))

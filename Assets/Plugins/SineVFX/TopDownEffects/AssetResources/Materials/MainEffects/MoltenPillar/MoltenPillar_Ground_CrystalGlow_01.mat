@@ -175,7 +175,7 @@ Material:
     - _FinalOpacityExp: 2
     - _FinalOpacityExp1: 1
     - _FinalOpacityPower: 1
-    - _FinalPower: 10
+    - _FinalPower: 3
     - _MainMaskExp: 1
     - _MainMaskScaleU: 1
     - _MainMaskScaleV: 1
@@ -228,7 +228,7 @@ Material:
     m_Colors:
     - _CustomColorMaskChannels: {r: 1, g: 0, b: 0, a: 0}
     - _CustomColorMaskChannels1: {r: 1, g: 0, b: 0, a: 0}
-    - _FinalColor: {r: 1, g: 0.10620204, b: 0, a: 1}
+    - _FinalColor: {r: 1, g: 0.10588236, b: 0, a: 1}
     - _MainMaskChannelsMultiply: {r: 1, g: 0, b: 0, a: 0}
     - _Noise01ScrollSpeedUV: {r: 1, g: 1, b: 0, a: 0}
     - _RampColorTint: {r: 1, g: 1, b: 1, a: 1}
