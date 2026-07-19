@@ -30,7 +30,7 @@ public class CharacterControl : MonoBehaviour, ICapturableCharacter
         _animator.applyRootMotion = false;
         EnsureAnimationEventReceiver();
         _movementLogic.Initialize(transform, _characterController, _cameraControl, _animator);
-        _effectsLogic.Initialize(transform);
+        _effectsLogic.Initialize();
         _ragdollLogic.Initialize(transform, _animator);
         _captureLogic.Initialize(this, transform, _characterController, _cameraControl,
             _ragdollLogic, _effectsLogic);

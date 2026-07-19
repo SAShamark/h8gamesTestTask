@@ -9,13 +9,11 @@ public class CharacterEffectsLogic
     [SerializeField] private GameObject _landingSmokePrefab;
     [SerializeField] private Vector3 _landingSmokeLocalOffset = new(0f, 0.5f, 0f);
 
-    private Transform _characterTransform;
     private ParticleSystem _landingSmoke;
     private bool _isStepDustPlaying;
 
-    public void Initialize(Transform characterTransform)
+    public void Initialize()
     {
-        _characterTransform = characterTransform;
         ConfigureStepDust();
         _landingSmoke = CreateEffect(_landingSmokePrefab);
     }
@@ -31,9 +29,9 @@ public class CharacterEffectsLogic
         StopStepDust();
     }
 
-    public void PlayLandingSmoke()
+    public void PlayLandingSmoke(Vector3 groundPosition)
     {
-        PlayEffect(_landingSmoke, _landingSmokeLocalOffset);
+        PlayEffect(_landingSmoke, groundPosition + _landingSmokeLocalOffset);
     }
 
     private void PlayStepDust()
@@ -112,7 +110,7 @@ public class CharacterEffectsLogic
         _isStepDustPlaying = false;
     }
 
-    private void PlayEffect(ParticleSystem particleSystem, Vector3 localOffset)
+    private void PlayEffect(ParticleSystem particleSystem, Vector3 position)
     {
         if (particleSystem == null)
         {
@@ -121,8 +119,8 @@ public class CharacterEffectsLogic
 
         Transform effectTransform = particleSystem.transform;
         effectTransform.SetPositionAndRotation(
-            _characterTransform.TransformPoint(localOffset),
-            Quaternion.LookRotation(_characterTransform.forward, Vector3.up));
+            position,
+            Quaternion.identity);
 
         GameObject effectObject = effectTransform.gameObject;
         effectObject.SetActive(true);

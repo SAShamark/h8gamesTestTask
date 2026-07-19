@@ -78,7 +78,7 @@ public class CharacterCaptureLogic
     private IEnumerator RecoverAfterThrow()
     {
         yield return _ragdollLogic.WaitForGroundContact();
-        _effectsLogic.PlayLandingSmoke();
+        _effectsLogic.PlayLandingSmoke(_ragdollLogic.GroundContactPoint);
         yield return _ragdollLogic.WaitForLanding();
         _characterControl.SetState(CharacterControl.CharacterState.Recovering);
         yield return _ragdollLogic.Recover();

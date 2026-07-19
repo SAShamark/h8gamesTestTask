@@ -43,12 +43,14 @@ public class CharacterRagdollLogic
     private Quaternion _hipsCharacterLocalRotation;
     private Vector3 _capturedHipsPosition;
     private Quaternion _capturedHipsRotation;
+    private Vector3 _groundContactPoint;
     private bool _isRagdollActive;
     private bool _isCaptured;
     private readonly RaycastHit[] _groundHits = new RaycastHit[GroundHitCapacity];
 
     public Transform ModelTransform => _modelTransform;
     public Transform HipsTransform => _hipsBody.transform;
+    public Vector3 GroundContactPoint => _groundContactPoint;
 
     public void Initialize(Transform characterTransform, Animator animator)
     {
@@ -426,18 +428,34 @@ public class CharacterRagdollLogic
 
     private bool IsTouchingGround()
     {
+        bool hasGroundContact = false;
+        Vector3 highestGroundPoint = default;
+
         for (int i = 0; i < _colliders.Length; i++)
         {
             Bounds bounds = _colliders[i].bounds;
             float checkDistance = bounds.extents.y + _groundContactTolerance;
 
-            if (TryGetGroundPoint(bounds.center, checkDistance, out _))
+            if (!TryGetGroundPoint(bounds.center, checkDistance,
+                    out Vector3 groundPoint))
             {
-                return true;
+                continue;
             }
+
+            if (!hasGroundContact || groundPoint.y > highestGroundPoint.y)
+            {
+                highestGroundPoint = groundPoint;
+            }
+
+            hasGroundContact = true;
         }
 
-        return false;
+        if (hasGroundContact)
+        {
+            _groundContactPoint = highestGroundPoint;
+        }
+
+        return hasGroundContact;
     }
 
     private void AlignCharacterToRagdoll()
