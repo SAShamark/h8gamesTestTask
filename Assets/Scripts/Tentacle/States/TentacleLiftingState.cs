@@ -34,15 +34,13 @@ namespace Tentacle.States
             float normalizedTime = Mathf.Clamp01(_timer / Mathf.Max(0.01f,
                 settings.LiftDuration));
             float movement = TentaclePoseSolver.SmootherStep(normalizedTime);
-            float shape = TentaclePoseSolver.SmootherStep(Mathf.Clamp01(normalizedTime /
-                                                                        Mathf.Max(0.01f, settings.LiftWrapTransitionPortion)));
             Vector3 position = Vector3.Lerp(_startPosition, Context.LiftedPosition, movement);
             Quaternion rotation = Quaternion.Slerp(_startRotation, Context.LiftedRotation,
                 movement);
 
             Context.CapturedCharacter.SetCapturedPose(position, rotation);
-            Context.Pose.UpdateLift(Context.RootPosition, position, Context.LiftDirection, shape,
-                1f, settings);
+            Context.Pose.UpdateLift(Context.RootPosition, position, rotation,
+                Context.LiftDirection, movement, 1f, settings);
 
             if (normalizedTime >= 1f)
             {

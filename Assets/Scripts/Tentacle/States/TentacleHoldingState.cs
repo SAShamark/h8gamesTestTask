@@ -40,8 +40,8 @@ namespace Tentacle.States
             Vector3 position = Context.LiftedPosition + offset;
 
             Context.CapturedCharacter.SetCapturedPose(position, rotation);
-            Context.Pose.UpdateLift(Context.RootPosition, position, Context.LiftDirection, 1f,
-                1f, settings);
+            Context.Pose.UpdateLift(Context.RootPosition, position, rotation,
+                Context.LiftDirection, 1f, 1f, settings);
 
             if (_timer >= settings.TopShakeDuration)
             {

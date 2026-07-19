@@ -67,8 +67,8 @@ namespace Tentacle.States
             Quaternion rotation = Quaternion.AngleAxis(-28f * smooth, _side) *
                                   Context.LiftedRotation;
             Context.CapturedCharacter.SetCapturedPose(position, rotation);
-            Context.Pose.UpdateLift(Context.RootPosition, position, Context.LiftDirection, 1f,
-                1f, settings);
+            Context.Pose.UpdateLift(Context.RootPosition, position, rotation,
+                Context.LiftDirection, 1f, 1f, settings);
 
             if (progress >= 1f)
             {
@@ -92,8 +92,8 @@ namespace Tentacle.States
                                                    Context.LiftedRotation, _releaseRotation,
                 TentaclePoseSolver.SmootherStep(progress));
             Context.CapturedCharacter.SetCapturedPose(position, rotation);
-            Context.Pose.UpdateLift(Context.RootPosition, position, Context.LiftDirection, 1f,
-                wrapBlend, settings);
+            Context.Pose.UpdateLift(Context.RootPosition, position, rotation,
+                Context.LiftDirection, 1f, wrapBlend, settings);
 
             if (progress < 1f)
             {
@@ -115,8 +115,8 @@ namespace Tentacle.States
             Vector3 target = _releasePosition + Context.LiftDirection *
                 settings.ThrowFollowThroughDistance - Vector3.up * 0.35f;
             Vector3 position = Vector3.Lerp(_releasePosition, target, progress);
-            Context.Pose.UpdateLift(Context.RootPosition, position, Context.LiftDirection, 1f,
-                0f, settings);
+            Context.Pose.UpdateLift(Context.RootPosition, position, _releaseRotation,
+                Context.LiftDirection, 1f, 0f, settings);
 
             if (progress >= 1f)
             {

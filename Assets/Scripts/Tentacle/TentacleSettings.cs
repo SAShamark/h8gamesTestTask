@@ -15,16 +15,11 @@ namespace Tentacle
         [SerializeField] private float _attackWindupDuration = 0.35f;
         [SerializeField, Range(0f, 1f)] private float _attackTakeoverNormalizedTime = 0.32f;
         [SerializeField] private float _attackTakeoverTimeout = 0.8f;
-        [SerializeField] private float _grabDuration = 0.75f;
-        [SerializeField] private float _grabVerticalOffset;
-        [SerializeField] private float _minimumGrabVerticalOffset = 0.85f;
+        [SerializeField] private float _grabDuration = 0.7f;
         [SerializeField] private float _arcHeight = 1.5f;
         [SerializeField] private float _arcForwardOffset = 2f;
         [SerializeField] private float _arcSideOffset = 0.75f;
-        [SerializeField, Range(0.5f, 0.9f)] private float _bodyBonePortion = 0.72f;
-        [SerializeField] private float _wrapRadius = 0.55f;
-        [SerializeField] private float _wrapTurns = 1.15f;
-        [SerializeField, Range(0.25f, 0.9f)] private float _reachPhasePortion = 0.65f;
+        [SerializeField, Range(0.25f, 0.9f)] private float _reachPhasePortion = 0.55f;
         [SerializeField] private float _recoverToIdleDuration = 0.35f;
         [FormerlySerializedAs("_liftLogic")]
         [SerializeField] private TentacleLiftSettings _liftSettings = new TentacleLiftSettings();
@@ -38,14 +33,9 @@ namespace Tentacle
         public float AttackTakeoverNormalizedTime => _attackTakeoverNormalizedTime;
         public float AttackTakeoverTimeout => _attackTakeoverTimeout;
         public float GrabDuration => _grabDuration;
-        public float GrabVerticalOffset => _grabVerticalOffset;
-        public float MinimumGrabVerticalOffset => _minimumGrabVerticalOffset;
         public float ArcHeight => _arcHeight;
         public float ArcForwardOffset => _arcForwardOffset;
         public float ArcSideOffset => _arcSideOffset;
-        public float BodyBonePortion => _bodyBonePortion;
-        public float WrapRadius => _wrapRadius;
-        public float WrapTurns => _wrapTurns;
         public float ReachPhasePortion => _reachPhasePortion;
         public float RecoverToIdleDuration => _recoverToIdleDuration;
         public TentacleLiftSettings Lift => _liftSettings;
@@ -54,14 +44,14 @@ namespace Tentacle
     [Serializable]
     public class TentacleLiftSettings
     {
-        [SerializeField] private float _liftDuration = 0.75f;
+        [SerializeField] private float _liftDuration = 0.9f;
         [SerializeField] private float _liftHeight = 4.25f;
         [SerializeField] private float _liftForwardOffset = 0.35f;
         [SerializeField] private float _liftArcHeight = 1.25f;
-        [SerializeField, Range(0.35f, 1f)] private float _liftWrapTransitionPortion = 0.65f;
         [SerializeField] private float _tipRadius = 0.48f;
         [SerializeField] private float _tipSurfaceOffset = 0.12f;
         [SerializeField] private float _tipMaxGripRadius = 0.68f;
+        [SerializeField, Range(0.75f, 1f)] private float _tipGripCompression = 0.88f;
         [SerializeField] private float _tipVerticalInset = 0.16f;
         [SerializeField] private float _tipWrapTurns = 1.65f;
         [SerializeField] private float _tipGripVerticalOffset = 1.05f;
@@ -69,10 +59,10 @@ namespace Tentacle
         [SerializeField, Range(0.35f, 0.9f)] private float _bodyBonePortion = 0.46f;
         [SerializeField] private float _topShakeDuration = 3f;
         [SerializeField] private float _topShakeFrequency = 1.35f;
-        [SerializeField] private float _topShakeSideAmplitude = 0.65f;
-        [SerializeField] private float _topShakeForwardAmplitude = 0.25f;
-        [SerializeField] private float _topShakeHeightAmplitude = 0.12f;
-        [SerializeField] private float _topShakeRotationAngle = 12f;
+        [SerializeField] private float _topShakeSideAmplitude = 0.22f;
+        [SerializeField] private float _topShakeForwardAmplitude = 0.1f;
+        [SerializeField] private float _topShakeHeightAmplitude = 0.06f;
+        [SerializeField] private float _topShakeRotationAngle = 5f;
         [SerializeField] private float _throwWindupDuration = 0.55f;
         [SerializeField] private float _throwReleaseDuration = 0.35f;
         [SerializeField] private float _throwDrawBackDistance = 1.15f;
@@ -89,10 +79,10 @@ namespace Tentacle
         public float LiftHeight => _liftHeight;
         public float LiftForwardOffset => _liftForwardOffset;
         public float LiftArcHeight => _liftArcHeight;
-        public float LiftWrapTransitionPortion => _liftWrapTransitionPortion;
         public float TipRadius => _tipRadius;
         public float TipSurfaceOffset => _tipSurfaceOffset;
         public float TipMaxGripRadius => _tipMaxGripRadius;
+        public float TipGripCompression => _tipGripCompression;
         public float TipVerticalInset => _tipVerticalInset;
         public float TipWrapTurns => _tipWrapTurns;
         public float TipGripVerticalOffset => _tipGripVerticalOffset;

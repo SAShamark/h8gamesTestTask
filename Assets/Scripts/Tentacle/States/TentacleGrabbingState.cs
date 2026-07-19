@@ -30,10 +30,9 @@ namespace Tentacle.States
                 return;
             }
 
-            Context.RotateTowardsTarget();
-
             if (!_isReaching)
             {
+                Context.RotateTowardsTarget();
                 UpdateAttackWindup();
                 return;
             }
@@ -60,7 +59,7 @@ namespace Tentacle.States
 
             Context.Animator.Update(0f);
             Context.Animator.enabled = false;
-            Context.Pose.BeginGrab();
+            Context.Pose.BeginGrab(Context.Target, Context.Settings);
             _isReaching = true;
         }
 

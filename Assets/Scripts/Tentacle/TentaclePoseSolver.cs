@@ -9,12 +9,14 @@ namespace Tentacle
         private Quaternion[] _startRotations;
         private Quaternion[] _rotationOffsets;
         private Vector3[] _targetPositions;
+        private Vector3[] _wrappedPositions;
         private Vector3[] _idleLocalPositions;
         private Quaternion[] _idleLocalRotations;
         private Vector3[] _recoveryStartPositions;
         private Quaternion[] _recoveryStartRotations;
         private float _tipRadius;
         private float _tipGripHalfHeight;
+        private bool _hasGripProfile;
 
         public TentaclePoseSolver(Transform[] bones)
         {
@@ -51,23 +53,26 @@ namespace Tentacle
             }
         }
 
-        public void BeginGrab()
+        public void BeginGrab(Transform target, TentacleSettings settings)
         {
             CaptureCurrentPose();
             CaptureRotationOffsets();
+            Vector3 gripCenter = GetGripCenter(target.position, target.rotation, settings.Lift);
+            Vector3 direction = GetFlatDirection(_startPositions[0], gripCenter, target.forward);
+            CaptureTargetWrapShape(target, direction, settings.Lift);
         }
 
         public void UpdateGrab(Transform target, float progress, TentacleSettings settings)
         {
             Vector3 root = _startPositions[0];
-            Vector3 targetPosition = GetGrabCenter(target, settings.GrabVerticalOffset,
-                settings.MinimumGrabVerticalOffset);
+            Vector3 targetPosition = GetGripCenter(target.position, target.rotation,
+                settings.Lift);
             Vector3 direction = GetFlatDirection(root, targetPosition, target.forward);
-            Vector3 side = GetSide(direction);
             float reach = SmootherStep(Mathf.Clamp01(progress / settings.ReachPhasePortion));
             float wrap = SmootherStep(Mathf.InverseLerp(settings.ReachPhasePortion, 1f, progress));
-            Vector3 wrapEntry = targetPosition - direction * settings.WrapRadius;
+            Vector3 wrapEntry = targetPosition - direction * _tipRadius;
             Vector3 currentTarget = Vector3.Lerp(root, wrapEntry, reach);
+            Vector3 side = GetSide(direction);
             Vector3 p1 = root + direction * settings.ArcForwardOffset +
                          side * settings.ArcSideOffset + Vector3.up * settings.ArcHeight;
             Vector3 p2 = currentTarget - direction * 1.5f -
@@ -76,22 +81,16 @@ namespace Tentacle
             for (int i = 0; i < _bones.Length; i++)
             {
                 float t = i / (float)(_bones.Length - 1);
-                if (t <= settings.BodyBonePortion)
-                {
-                    float bodyT = Mathf.Lerp(t,
-                        Mathf.InverseLerp(0f, settings.BodyBonePortion, t), wrap);
-                    _targetPositions[i] = EvaluateBezier(root, p1, p2, currentTarget, bodyT);
-                    continue;
-                }
+                _targetPositions[i] = EvaluateBezier(root, p1, p2, currentTarget, t);
+            }
 
-                float wrapT = Mathf.InverseLerp(settings.BodyBonePortion, 1f, t);
-                Vector3 straight = EvaluateBezier(root, p1, p2, currentTarget, t);
-                float boneWrap = SmootherStep(Mathf.Clamp01(wrap * 1.25f - wrapT * 0.25f));
-                float angle = (180f - 360f * settings.WrapTurns * boneWrap * wrapT) *
-                              Mathf.Deg2Rad;
-                Vector3 wrapped = targetPosition + direction * Mathf.Cos(angle) *
-                    settings.WrapRadius + side * Mathf.Sin(angle) * settings.WrapRadius;
-                _targetPositions[i] = Vector3.Lerp(straight, wrapped, boneWrap);
+            BuildLiftPose(root, targetPosition, target.rotation, direction, 1f, settings.Lift,
+                _wrappedPositions);
+
+            for (int i = 0; i < _bones.Length; i++)
+            {
+                _targetPositions[i] = Vector3.Lerp(_targetPositions[i], _wrappedPositions[i],
+                    wrap);
             }
 
             ApplyWorldPose(reach, direction);
@@ -101,49 +100,20 @@ namespace Tentacle
         {
             CaptureCurrentPose();
             CaptureRotationOffsets();
-            CaptureTargetWrapShape(target, direction, settings);
+
+            if (!_hasGripProfile)
+            {
+                CaptureTargetWrapShape(target, direction, settings);
+            }
         }
 
-        public void UpdateLift(Vector3 root, Vector3 characterPosition, Vector3 direction,
-            float progress, float wrapBlend, TentacleLiftSettings settings)
+        public void UpdateLift(Vector3 root, Vector3 characterPosition,
+            Quaternion characterRotation, Vector3 direction, float progress, float wrapBlend,
+            TentacleLiftSettings settings)
         {
-            Vector3 side = GetSide(direction);
-            Vector3 gripCenter = GetGripCenter(characterPosition, settings);
-            Vector3 lowerHandle = root + direction * 0.75f + Vector3.up * settings.LiftArcHeight;
-            Vector3 upperHandle = gripCenter - Vector3.up * settings.LiftArcHeight -
-                                  direction * (_tipRadius + settings.LiftForwardOffset);
-            float bodyPortion = Mathf.Min(settings.BodyBonePortion, 0.46f);
-            float turns = Mathf.Max(settings.TipWrapTurns, 1.65f);
-            wrapBlend = Mathf.Clamp01(wrapBlend);
-
-            for (int i = 0; i < _bones.Length; i++)
-            {
-                float t = i / (float)(_bones.Length - 1);
-                if (t <= bodyPortion)
-                {
-                    float bodyT = Mathf.InverseLerp(0f, bodyPortion, t);
-                    _targetPositions[i] = EvaluateBezier(root, lowerHandle, upperHandle,
-                        GetGripEntry(gripCenter, direction), bodyT);
-                    continue;
-                }
-
-                float wrapT = Mathf.InverseLerp(bodyPortion, 1f, t);
-                Vector3 wrapCenter = GetRingCenter(gripCenter, wrapT, settings);
-                float angle = (180f - 360f * turns * wrapT) * Mathf.Deg2Rad;
-                Vector3 wrapped = wrapCenter + direction * Mathf.Cos(angle) * _tipRadius +
-                                  side * Mathf.Sin(angle) * _tipRadius;
-                float unwrap = 1f - wrapBlend;
-                float localUnwrap = SmootherStep(Mathf.InverseLerp((1f - wrapT) * 0.22f, 1f,
-                    unwrap));
-                float expansion = 1f + Mathf.Sin(localUnwrap * Mathf.PI) *
-                                  Mathf.Max(0f, settings.ThrowUnwrapExpansion);
-                Vector3 expanded = wrapCenter + (wrapped - wrapCenter) * expansion;
-                Vector3 open = wrapCenter - direction * (_tipRadius +
-                    Mathf.Max(0f, settings.ThrowUnwrapTrailDistance) * wrapT) +
-                    side * (Mathf.Sin(wrapT * Mathf.PI) * _tipRadius * 0.25f);
-                float peel = SmootherStep(Mathf.InverseLerp(0.32f, 1f, localUnwrap));
-                _targetPositions[i] = Vector3.Lerp(expanded, open, peel);
-            }
+            Vector3 gripCenter = GetGripCenter(characterPosition, characterRotation, settings);
+            BuildLiftPose(root, gripCenter, characterRotation, direction, wrapBlend, settings,
+                _targetPositions);
 
             ApplyWorldPose(progress, direction);
         }
@@ -192,8 +162,10 @@ namespace Tentacle
             _startRotations = null;
             _rotationOffsets = null;
             _targetPositions = null;
+            _wrappedPositions = null;
             _recoveryStartPositions = null;
             _recoveryStartRotations = null;
+            _hasGripProfile = false;
         }
 
         public static Vector3 EvaluateBezier(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3,
@@ -215,6 +187,7 @@ namespace Tentacle
             _startPositions = new Vector3[_bones.Length];
             _startRotations = new Quaternion[_bones.Length];
             _targetPositions = new Vector3[_bones.Length];
+            _wrappedPositions = new Vector3[_bones.Length];
 
             for (int i = 0; i < _bones.Length; i++)
             {
@@ -285,8 +258,10 @@ namespace Tentacle
             Collider targetCollider = target.GetComponentInParent<Collider>();
             if (targetCollider == null)
             {
-                _tipRadius = settings.TipRadius;
+                _tipRadius = settings.TipRadius *
+                             Mathf.Clamp(settings.TipGripCompression, 0.75f, 1f);
                 _tipGripHalfHeight = Mathf.Max(0.08f, settings.TipRadius * settings.TipGripPitch);
+                _hasGripProfile = true;
                 return;
             }
 
@@ -299,15 +274,69 @@ namespace Tentacle
             _tipRadius = settings.TipMaxGripRadius > 0f
                 ? Mathf.Min(rawRadius, settings.TipMaxGripRadius)
                 : rawRadius;
+            _tipRadius *= Mathf.Clamp(settings.TipGripCompression, 0.75f, 1f);
             float availableGripHeight = Mathf.Max(0.08f, bounds.extents.y -
                 settings.TipVerticalInset);
             _tipGripHalfHeight = Mathf.Max(0.08f, Mathf.Min(availableGripHeight,
                 _tipRadius * settings.TipGripPitch));
+            _hasGripProfile = true;
         }
 
-        private Vector3 GetGripCenter(Vector3 characterPosition, TentacleLiftSettings settings)
+        private void BuildLiftPose(Vector3 root, Vector3 gripCenter,
+            Quaternion characterRotation, Vector3 direction, float wrapBlend,
+            TentacleLiftSettings settings, Vector3[] positions)
         {
-            return characterPosition + Vector3.up * settings.TipGripVerticalOffset;
+            Vector3 gripUp = characterRotation * Vector3.up;
+            Vector3 gripForward = Vector3.ProjectOnPlane(direction, gripUp);
+            if (gripForward.sqrMagnitude <= 0.001f)
+            {
+                gripForward = characterRotation * Vector3.forward;
+            }
+
+            gripForward.Normalize();
+            Vector3 gripSide = Vector3.Cross(gripUp, gripForward).normalized;
+            Vector3 lowerHandle = root + direction * 0.75f + Vector3.up * settings.LiftArcHeight;
+            Vector3 upperHandle = gripCenter - gripUp * settings.LiftArcHeight -
+                                  gripForward * (_tipRadius + settings.LiftForwardOffset);
+            float bodyPortion = Mathf.Min(settings.BodyBonePortion, 0.46f);
+            float turns = Mathf.Max(settings.TipWrapTurns, 1.65f);
+            wrapBlend = Mathf.Clamp01(wrapBlend);
+
+            for (int i = 0; i < _bones.Length; i++)
+            {
+                float t = i / (float)(_bones.Length - 1);
+                if (t <= bodyPortion)
+                {
+                    float bodyT = Mathf.InverseLerp(0f, bodyPortion, t);
+                    positions[i] = EvaluateBezier(root, lowerHandle, upperHandle,
+                        GetGripEntry(gripCenter, gripForward), bodyT);
+                    continue;
+                }
+
+                float wrapT = Mathf.InverseLerp(bodyPortion, 1f, t);
+                Vector3 wrapCenter = GetRingCenter(gripCenter, gripUp, wrapT, settings);
+                float angle = (180f - 360f * turns * wrapT) * Mathf.Deg2Rad;
+                Vector3 wrapped = wrapCenter + gripForward * Mathf.Cos(angle) * _tipRadius +
+                                  gripSide * Mathf.Sin(angle) * _tipRadius;
+                float unwrap = 1f - wrapBlend;
+                float localUnwrap = SmootherStep(Mathf.InverseLerp((1f - wrapT) * 0.22f, 1f,
+                    unwrap));
+                float expansion = 1f + Mathf.Sin(localUnwrap * Mathf.PI) *
+                                  Mathf.Max(0f, settings.ThrowUnwrapExpansion);
+                Vector3 expanded = wrapCenter + (wrapped - wrapCenter) * expansion;
+                Vector3 open = wrapCenter - gripForward * (_tipRadius +
+                    Mathf.Max(0f, settings.ThrowUnwrapTrailDistance) * wrapT) +
+                    gripSide * (Mathf.Sin(wrapT * Mathf.PI) * _tipRadius * 0.25f);
+                float peel = SmootherStep(Mathf.InverseLerp(0.32f, 1f, localUnwrap));
+                positions[i] = Vector3.Lerp(expanded, open, peel);
+            }
+        }
+
+        private static Vector3 GetGripCenter(Vector3 characterPosition,
+            Quaternion characterRotation, TentacleLiftSettings settings)
+        {
+            return characterPosition + characterRotation * Vector3.up *
+                settings.TipGripVerticalOffset;
         }
 
         private Vector3 GetGripEntry(Vector3 center, Vector3 direction)
@@ -315,11 +344,12 @@ namespace Tentacle
             return center - direction * _tipRadius;
         }
 
-        private Vector3 GetRingCenter(Vector3 center, float t, TentacleLiftSettings settings)
+        private Vector3 GetRingCenter(Vector3 center, Vector3 gripUp, float t,
+            TentacleLiftSettings settings)
         {
             float verticalWave = Mathf.Sin(t * Mathf.PI * 2f) * _tipGripHalfHeight *
                                  Mathf.Clamp01(settings.TipGripPitch);
-            return center + Vector3.up * verticalWave;
+            return center + gripUp * verticalWave;
         }
 
         private static Vector3 GetFlatDirection(Vector3 from, Vector3 to, Vector3 fallback)
@@ -346,16 +376,6 @@ namespace Tentacle
             return index < positions.Length - 1
                 ? positions[index + 1] - positions[index]
                 : positions[index] - positions[index - 1];
-        }
-
-        private static Vector3 GetGrabCenter(Transform target, float verticalOffset,
-            float minimumVerticalOffset)
-        {
-            Collider targetCollider = target.GetComponentInParent<Collider>();
-            float gripOffset = Mathf.Max(verticalOffset, minimumVerticalOffset);
-            return targetCollider != null
-                ? targetCollider.bounds.center + Vector3.up * gripOffset
-                : target.position + Vector3.up * gripOffset;
         }
 
         private static float GetBoundsRadius(Bounds bounds, Vector3 axis)
