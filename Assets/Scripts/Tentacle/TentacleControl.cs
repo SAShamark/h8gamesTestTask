@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Tentacle
 {
@@ -15,6 +16,7 @@ namespace Tentacle
         [SerializeField] private float _rotationSpeed = 540f;
         [SerializeField] private float _rotationSmoothTime = 0.16f;
 
+        [FormerlySerializedAs("_captureLogic")]
         [SerializeField] private TentacleSettings _settings = new();
         [SerializeField] private TentacleState _state;
 

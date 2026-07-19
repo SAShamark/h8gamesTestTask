@@ -3,7 +3,6 @@ using UnityEngine;
 public class CameraControl : MonoBehaviour
 {
     private const int CameraCollisionHitCapacity = 16;
-    private static readonly float[] RagdollCameraYawOffsets = { 0f, 45f, -45f, 90f, -90f };
 
     private enum CameraViewMode
     {
@@ -14,6 +13,7 @@ public class CameraControl : MonoBehaviour
 
     [Header("Target")]
     [SerializeField] private Transform _target;
+    [SerializeField] private Transform _firstPersonAnchor;
     [SerializeField] private Vector3 _firstPersonOffset = new(0f, 0.65f, 0f);
     [SerializeField] private Vector3 _thirdPersonOffset = new(0f, 1.25f, 0f);
 
@@ -32,31 +32,27 @@ public class CameraControl : MonoBehaviour
     [SerializeField] private float _thirdPersonPitch = 18f;
     [SerializeField] private float _thirdPersonPitchMin = -15f;
     [SerializeField] private float _thirdPersonPitchMax = 55f;
-    [SerializeField] private float _thirdPersonPositionSmoothTime = 0.08f;
-    [SerializeField] private float _thirdPersonRotationSharpness = 18f;
 
     [Header("Ragdoll View")]
     [SerializeField] private float _ragdollDistance = 8f;
     [SerializeField] private float _ragdollHeight = 2.2f;
     [SerializeField] private float _ragdollPitch = 28f;
+    [SerializeField] private float _ragdollPitchMin = 5f;
+    [SerializeField] private float _ragdollPitchMax = 65f;
     [SerializeField] private float _ragdollFocusHeight = 0.55f;
     [SerializeField] private float _ragdollPositionSmoothTime = 0.12f;
     [SerializeField] private float _ragdollRotationSharpness = 14f;
-    [SerializeField] private float _ragdollMinimumComfortDistance = 5f;
 
     [Header("Third Person Collision")]
     [SerializeField] private LayerMask _thirdPersonCollisionLayers = ~0;
     [SerializeField] private float _thirdPersonCollisionRadius = 0.28f;
     [SerializeField] private float _thirdPersonCollisionPadding = 0.12f;
-    [SerializeField] private float _thirdPersonBlockedSmoothTime = 0.03f;
-    [SerializeField] private float _thirdPersonReturnSmoothTime = 0.12f;
 
     private CameraViewMode _viewMode = CameraViewMode.ThirdPerson;
     private readonly RaycastHit[] _cameraCollisionHits = new RaycastHit[CameraCollisionHitCapacity];
     private Vector3 _positionVelocity;
     private float _yaw;
     private float _pitch;
-    private float _targetYawOffset;
     private bool _isViewModeForced;
     private CameraViewMode _viewModeBeforeForce;
     private Transform _extraCollisionIgnoreRoot;
@@ -66,10 +62,11 @@ public class CameraControl : MonoBehaviour
 
     private void Awake()
     {
+        ResolveFirstPersonAnchor();
+
         Vector3 angles = transform.eulerAngles;
         _yaw = angles.y;
         _pitch = _thirdPersonPitch;
-        _targetYawOffset = _target.eulerAngles.y - _yaw;
 
         if (_lockCursor)
         {
@@ -197,6 +194,7 @@ public class CameraControl : MonoBehaviour
     private void SetFirstPersonView()
     {
         _viewMode = CameraViewMode.FirstPerson;
+        _yaw = _target.eulerAngles.y;
         _pitch = Mathf.Clamp(_pitch, _firstPersonPitchMin, _firstPersonPitchMax);
         _positionVelocity = Vector3.zero;
     }
@@ -210,11 +208,6 @@ public class CameraControl : MonoBehaviour
 
     private void UpdateLookInput()
     {
-        if (_viewMode == CameraViewMode.Ragdoll)
-        {
-            return;
-        }
-
         _yaw += Input.GetAxisRaw("Mouse X") * _mouseSensitivity;
         _pitch -= Input.GetAxisRaw("Mouse Y") * _mouseSensitivity;
 
@@ -224,13 +217,19 @@ public class CameraControl : MonoBehaviour
             return;
         }
 
+        if (_viewMode == CameraViewMode.Ragdoll)
+        {
+            _pitch = Mathf.Clamp(_pitch, _ragdollPitchMin, _ragdollPitchMax);
+            return;
+        }
+
         _pitch = Mathf.Clamp(_pitch, _thirdPersonPitchMin, _thirdPersonPitchMax);
     }
 
     private void UpdateFirstPersonCamera()
     {
         RotateTargetWithFirstPersonCamera();
-        transform.SetPositionAndRotation(_target.position + _firstPersonOffset,
+        transform.SetPositionAndRotation(GetFirstPersonCameraPosition(),
             Quaternion.Euler(_pitch, _yaw, 0f));
     }
 
@@ -241,7 +240,7 @@ public class CameraControl : MonoBehaviour
             return;
         }
 
-        _target.rotation = Quaternion.Euler(0f, _yaw + _targetYawOffset, 0f);
+        _target.rotation = Quaternion.Euler(0f, _yaw, 0f);
     }
 
     private void UpdateThirdPersonCamera()
@@ -250,16 +249,8 @@ public class CameraControl : MonoBehaviour
         Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);
         Vector3 desiredPosition = focusPoint - rotation * Vector3.forward * _thirdPersonDistance +
                                   Vector3.up * _thirdPersonHeight;
-        Vector3 targetPosition = GetThirdPersonCameraPosition(focusPoint, desiredPosition,
-            out bool isBlocked);
-        float smoothTime = isBlocked
-            ? Mathf.Min(_thirdPersonBlockedSmoothTime, _thirdPersonPositionSmoothTime)
-            : Mathf.Max(_thirdPersonReturnSmoothTime, _thirdPersonPositionSmoothTime);
-
-        transform.position = Vector3.SmoothDamp(transform.position, targetPosition,
-            ref _positionVelocity, smoothTime);
-        transform.rotation = Quaternion.Slerp(transform.rotation, rotation,
-            1f - Mathf.Exp(-_thirdPersonRotationSharpness * Time.deltaTime));
+        transform.position = GetThirdPersonCameraPosition(focusPoint, desiredPosition, out _);
+        transform.rotation = rotation;
     }
 
     private void UpdateRagdollCamera()
@@ -277,33 +268,33 @@ public class CameraControl : MonoBehaviour
 
     private Vector3 GetRagdollCameraPosition(Vector3 focusPoint)
     {
-        Vector3 bestPosition = focusPoint;
-        float bestDistance = 0f;
+        Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+        Vector3 desiredPosition = focusPoint - rotation * Vector3.forward * _ragdollDistance +
+                                  Vector3.up * _ragdollHeight;
+        return GetThirdPersonCameraPosition(focusPoint, desiredPosition, out _);
+    }
 
-        for (int i = 0; i < RagdollCameraYawOffsets.Length; i++)
+    private Vector3 GetFirstPersonCameraPosition()
+    {
+        if (_firstPersonAnchor != null)
         {
-            Quaternion rotation = Quaternion.Euler(_ragdollPitch,
-                _yaw + RagdollCameraYawOffsets[i], 0f);
-            Vector3 desiredPosition = focusPoint - rotation * Vector3.forward * _ragdollDistance +
-                                      Vector3.up * _ragdollHeight;
-            Vector3 position = GetThirdPersonCameraPosition(focusPoint, desiredPosition, out _);
-            float distance = Vector3.Distance(focusPoint, position);
-
-            if (distance <= bestDistance)
-            {
-                continue;
-            }
-
-            bestPosition = position;
-            bestDistance = distance;
-
-            if (i == 0 && bestDistance >= _ragdollMinimumComfortDistance)
-            {
-                break;
-            }
+            return _firstPersonAnchor.position;
         }
 
-        return bestPosition;
+        return _target.position + _firstPersonOffset;
+    }
+
+    private void ResolveFirstPersonAnchor()
+    {
+        if (_firstPersonAnchor != null)
+        {
+            return;
+        }
+
+        Animator animator = _target.GetComponentInChildren<Animator>();
+        _firstPersonAnchor = animator != null
+            ? animator.GetBoneTransform(HumanBodyBones.Head)
+            : _target;
     }
 
     private Vector3 GetRagdollFocusPoint()

@@ -1010,23 +1010,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _target: {fileID: 544577692}
+  _firstPersonAnchor: {fileID: 1261335323}
   _firstPersonOffset: {x: -0.2, y: 2.7, z: 0}
   _thirdPersonOffset: {x: 0, y: 1.5, z: 0}
   _mouseSensitivity: 0.6
   _lockCursor: 1
   _firstPersonPitchMin: -50
-  _firstPersonPitchMax: 25
+  _firstPersonPitchMax: 50
   _rotateTargetWithFirstPersonCamera: 1
   _thirdPersonDistance: 5
   _thirdPersonHeight: 0.35
   _thirdPersonPitch: 30
   _thirdPersonPitchMin: -15
   _thirdPersonPitchMax: 55
-  _thirdPersonPositionSmoothTime: 0.08
-  _thirdPersonRotationSharpness: 18
-  _ragdollDistance: 3
+  _ragdollDistance: 5
   _ragdollHeight: 2.2
   _ragdollPitch: 28
+  _ragdollPitchMin: 5
+  _ragdollPitchMax: 65
   _ragdollFocusHeight: 0.55
   _ragdollPositionSmoothTime: 0.12
   _ragdollRotationSharpness: 14
@@ -1035,8 +1036,6 @@ MonoBehaviour:
     m_Bits: 4294967295
   _thirdPersonCollisionRadius: 0.28
   _thirdPersonCollisionPadding: 0.12
-  _thirdPersonBlockedSmoothTime: 0.03
-  _thirdPersonReturnSmoothTime: 0.12
 --- !u!4 &369799987 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2704895722910194308, guid: 9d65e676e17c580428d3ed74a544b9e4,
@@ -1570,7 +1569,7 @@ MonoBehaviour:
     _useStepDustLoop: 1
     _landingSmokePrefab: {fileID: 174215883493780395, guid: e041065394159cf4c9a05d253002f98f,
       type: 3}
-    _landingSmokeLocalOffset: {x: 0, y: 0.15, z: 0}
+    _landingSmokeLocalOffset: {x: 0, y: 1, z: 0}
   _ragdollLogic:
     _minimumThrowTime: 0.65
     _maximumThrowTime: 3
@@ -1593,7 +1592,7 @@ Transform:
   m_GameObject: {fileID: 544343228}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -2.08, y: 0.84, z: -1.44}
+  m_LocalPosition: {x: -2.08, y: 0, z: -1.44}
   m_LocalScale: {x: 0.75, y: 0.75, z: 0.75}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -2192,7 +2191,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 30.000002, y: 6.4500804, z: 30.000015}
-  m_Center: {x: 0.0000009536743, y: -2.7749646, z: 0.00006723404}
+  m_Center: {x: 0.0000009536743, y: -3, z: 0.00006723404}
 --- !u!4 &679712787 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5047312714911952707, guid: 9d65e676e17c580428d3ed74a544b9e4,
@@ -2332,7 +2331,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 30.000002, y: 6.4500804, z: 30.000015}
-  m_Center: {x: 0.0000009536743, y: -2.7749646, z: 0.00006723404}
+  m_Center: {x: 0.0000009536743, y: -3, z: 0.00006723404}
 --- !u!23 &798243406
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3336,7 +3335,7 @@ MonoBehaviour:
   _postThrowCooldown: 0.65
   _rotationSpeed: 540
   _rotationSmoothTime: 0.16
-  _captureLogic:
+  _settings:
     _bones:
     - {fileID: 427752022}
     - {fileID: 1600960628}
@@ -3375,6 +3374,7 @@ MonoBehaviour:
     _attackTakeoverTimeout: 0.8
     _grabDuration: 0.5
     _grabVerticalOffset: 0
+    _minimumGrabVerticalOffset: 0.85
     _arcHeight: 1.5
     _arcForwardOffset: 2
     _arcSideOffset: 0.75
@@ -3383,7 +3383,7 @@ MonoBehaviour:
     _wrapTurns: 1.15
     _reachPhasePortion: 0.65
     _recoverToIdleDuration: 0.35
-    _liftLogic:
+    _liftSettings:
       _liftDuration: 0.75
       _liftHeight: 4.25
       _liftForwardOffset: 0.35
@@ -3391,8 +3391,11 @@ MonoBehaviour:
       _liftWrapTransitionPortion: 0.65
       _tipRadius: 0.48
       _tipSurfaceOffset: 0.42
+      _tipMaxGripRadius: 0.68
       _tipVerticalInset: 0.16
       _tipWrapTurns: 1.65
+      _tipGripVerticalOffset: 1.05
+      _tipGripPitch: 0.18
       _bodyBonePortion: 0.46
       _topShakeDuration: 3
       _topShakeFrequency: 1.35
@@ -4360,7 +4363,38 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 30.000002, y: 6.4500804, z: 30.000015}
-  m_Center: {x: 0.0000009536743, y: -2.7749646, z: 0.00006723404}
+  m_Center: {x: 0.0000009536743, y: -3, z: 0.00006723404}
+--- !u!1 &1261335322
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1261335323}
+  m_Layer: 0
+  m_Name: CameraAncher
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1261335323
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1261335322}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.3, z: -0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5017534649848207655}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1284002401 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3693405078366962279, guid: 9d65e676e17c580428d3ed74a544b9e4,
@@ -5772,7 +5806,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 30.000002, y: 6.4500804, z: 30.000015}
-  m_Center: {x: 0.0000009536743, y: -2.7749646, z: 0.00006723404}
+  m_Center: {x: 0.0000009536743, y: -3, z: 0.00006723404}
 --- !u!144 &1897256652
 CharacterJoint:
   m_ObjectHideFlags: 0
@@ -36523,7 +36557,7 @@ Transform:
   m_GameObject: {fileID: 4711458127547964852}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.35, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -42742,7 +42776,8 @@ Transform:
   m_LocalPosition: {x: -0.109315485, y: -0.0026627253, z: 0.000000002614688}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1261335323}
   m_Father: {fileID: 5017534649848207719}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &5017534649848207657
@@ -48677,7 +48712,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 30.000002, y: 6.4500804, z: 30.000015}
-  m_Center: {x: 0.0000009536743, y: -2.7749646, z: 0.00006723404}
+  m_Center: {x: 0.0000009536743, y: -3, z: 0.00006723404}
 --- !u!33 &7953167629119207572
 MeshFilter:
   m_ObjectHideFlags: 0

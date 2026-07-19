@@ -71,7 +71,7 @@ namespace Tentacle
             }
 
             float targetYaw = Quaternion.LookRotation(direction).eulerAngles.y;
-            float yaw = Mathf.SmoothDampAngle(Origin.eulerAngles.y, targetYaw,
+            float yaw = Mathf.SmoothDampAngle(_model.eulerAngles.y, targetYaw,
                 ref _rotationVelocity, Mathf.Max(0.01f, _rotationSmoothTime), _rotationSpeed,
                 Time.deltaTime);
             _model.rotation = Quaternion.Euler(0f, yaw, 0f);
