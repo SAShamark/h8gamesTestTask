@@ -11,12 +11,11 @@ public class CharacterControl : MonoBehaviour, ICapturableCharacter
         Recovering
     }
 
-    [Header("Links")]
     [SerializeField] private CameraControl _cameraControl;
     [SerializeField] private Animator _animator;
 
-    [Header("Logic")]
     [SerializeField] private MovementLogic _movementLogic = new();
+    [SerializeField] private CharacterEffectsLogic _effectsLogic = new();
     [SerializeField] private CharacterCaptureLogic _captureLogic = new();
     [SerializeField] private CharacterRagdollLogic _ragdollLogic = new();
 
@@ -31,14 +30,20 @@ public class CharacterControl : MonoBehaviour, ICapturableCharacter
         _animator.applyRootMotion = false;
         EnsureAnimationEventReceiver();
         _movementLogic.Initialize(transform, _characterController, _cameraControl, _animator);
+        _effectsLogic.Initialize(transform);
         _ragdollLogic.Initialize(transform, _animator);
         _captureLogic.Initialize(this, transform, _characterController, _cameraControl,
-            _ragdollLogic);
+            _ragdollLogic, _effectsLogic);
     }
 
     private void Update()
     {
         UpdateMovement();
+    }
+
+    private void FixedUpdate()
+    {
+        UpdateCapturedRagdoll();
     }
 
     private void UpdateMovement()
@@ -49,6 +54,15 @@ public class CharacterControl : MonoBehaviour, ICapturableCharacter
         }
 
         _movementLogic.UpdateMovement();
+        _effectsLogic.UpdateStepDust(_movementLogic.IsMovingOnGround);
+    }
+
+    private void UpdateCapturedRagdoll()
+    {
+        if (_state == CharacterState.Captured)
+        {
+            _captureLogic.UpdateCapturedRagdoll();
+        }
     }
 
     public bool TryBeginCapture()

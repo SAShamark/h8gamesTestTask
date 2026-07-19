@@ -23,6 +23,9 @@ public class MovementLogic
     private Vector3 _horizontalVelocity;
     private float _verticalVelocity;
 
+    public bool IsMovingOnGround => _characterController.isGrounded &&
+                                    _horizontalVelocity.sqrMagnitude > 0.2f;
+
     public void Initialize(
         Transform characterTransform,
         CharacterController characterController,

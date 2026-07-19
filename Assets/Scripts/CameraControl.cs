@@ -3,11 +3,13 @@ using UnityEngine;
 public class CameraControl : MonoBehaviour
 {
     private const int CameraCollisionHitCapacity = 16;
+    private static readonly float[] RagdollCameraYawOffsets = { 0f, 45f, -45f, 90f, -90f };
 
     private enum CameraViewMode
     {
         FirstPerson,
-        ThirdPerson
+        ThirdPerson,
+        Ragdoll
     }
 
     [Header("Target")]
@@ -33,6 +35,15 @@ public class CameraControl : MonoBehaviour
     [SerializeField] private float _thirdPersonPositionSmoothTime = 0.08f;
     [SerializeField] private float _thirdPersonRotationSharpness = 18f;
 
+    [Header("Ragdoll View")]
+    [SerializeField] private float _ragdollDistance = 8f;
+    [SerializeField] private float _ragdollHeight = 2.2f;
+    [SerializeField] private float _ragdollPitch = 28f;
+    [SerializeField] private float _ragdollFocusHeight = 0.55f;
+    [SerializeField] private float _ragdollPositionSmoothTime = 0.12f;
+    [SerializeField] private float _ragdollRotationSharpness = 14f;
+    [SerializeField] private float _ragdollMinimumComfortDistance = 5f;
+
     [Header("Third Person Collision")]
     [SerializeField] private LayerMask _thirdPersonCollisionLayers = ~0;
     [SerializeField] private float _thirdPersonCollisionRadius = 0.28f;
@@ -48,6 +59,8 @@ public class CameraControl : MonoBehaviour
     private float _targetYawOffset;
     private bool _isViewModeForced;
     private CameraViewMode _viewModeBeforeForce;
+    private Transform _extraCollisionIgnoreRoot;
+    private Transform _ragdollFocus;
 
     public bool IsFirstPerson => _viewMode == CameraViewMode.FirstPerson;
 
@@ -73,6 +86,12 @@ public class CameraControl : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (_viewMode == CameraViewMode.Ragdoll)
+        {
+            UpdateRagdollCamera();
+            return;
+        }
+
         if (IsFirstPerson)
         {
             UpdateFirstPersonCamera();
@@ -102,7 +121,7 @@ public class CameraControl : MonoBehaviour
         return Quaternion.Euler(0f, _yaw, 0f);
     }
 
-    public void ForceThirdPersonView()
+    public void ForceRagdollView(Transform ragdollFocus, Vector3 throwVelocity)
     {
         if (!_isViewModeForced)
         {
@@ -110,7 +129,26 @@ public class CameraControl : MonoBehaviour
             _isViewModeForced = true;
         }
 
-        SetThirdPersonView();
+        _viewMode = CameraViewMode.Ragdoll;
+        _ragdollFocus = ragdollFocus;
+        _pitch = _ragdollPitch;
+        _yaw = GetRagdollYaw(throwVelocity);
+        _positionVelocity = Vector3.zero;
+    }
+
+    public void ForceCaptureView(Transform ragdollFocus)
+    {
+        if (!_isViewModeForced)
+        {
+            _viewModeBeforeForce = _viewMode;
+            _isViewModeForced = true;
+        }
+
+        _viewMode = CameraViewMode.Ragdoll;
+        _ragdollFocus = ragdollFocus;
+        _pitch = _ragdollPitch;
+        _yaw = GetCurrentCameraYaw(ragdollFocus.position);
+        _positionVelocity = Vector3.zero;
     }
 
     public void RestoreForcedViewMode()
@@ -130,6 +168,12 @@ public class CameraControl : MonoBehaviour
         }
 
         _isViewModeForced = false;
+        _ragdollFocus = null;
+    }
+
+    public void SetExtraCollisionIgnoreRoot(Transform ignoreRoot)
+    {
+        _extraCollisionIgnoreRoot = ignoreRoot;
     }
 
     private void UpdateViewMode()
@@ -166,6 +210,11 @@ public class CameraControl : MonoBehaviour
 
     private void UpdateLookInput()
     {
+        if (_viewMode == CameraViewMode.Ragdoll)
+        {
+            return;
+        }
+
         _yaw += Input.GetAxisRaw("Mouse X") * _mouseSensitivity;
         _pitch -= Input.GetAxisRaw("Mouse Y") * _mouseSensitivity;
 
@@ -211,6 +260,85 @@ public class CameraControl : MonoBehaviour
             ref _positionVelocity, smoothTime);
         transform.rotation = Quaternion.Slerp(transform.rotation, rotation,
             1f - Mathf.Exp(-_thirdPersonRotationSharpness * Time.deltaTime));
+    }
+
+    private void UpdateRagdollCamera()
+    {
+        Vector3 focusPoint = GetRagdollFocusPoint();
+        Vector3 targetPosition = GetRagdollCameraPosition(focusPoint);
+
+        transform.position = Vector3.SmoothDamp(transform.position, targetPosition,
+            ref _positionVelocity, _ragdollPositionSmoothTime);
+        Quaternion lookRotation = Quaternion.LookRotation(focusPoint - transform.position,
+            Vector3.up);
+        transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation,
+            1f - Mathf.Exp(-_ragdollRotationSharpness * Time.deltaTime));
+    }
+
+    private Vector3 GetRagdollCameraPosition(Vector3 focusPoint)
+    {
+        Vector3 bestPosition = focusPoint;
+        float bestDistance = 0f;
+
+        for (int i = 0; i < RagdollCameraYawOffsets.Length; i++)
+        {
+            Quaternion rotation = Quaternion.Euler(_ragdollPitch,
+                _yaw + RagdollCameraYawOffsets[i], 0f);
+            Vector3 desiredPosition = focusPoint - rotation * Vector3.forward * _ragdollDistance +
+                                      Vector3.up * _ragdollHeight;
+            Vector3 position = GetThirdPersonCameraPosition(focusPoint, desiredPosition, out _);
+            float distance = Vector3.Distance(focusPoint, position);
+
+            if (distance <= bestDistance)
+            {
+                continue;
+            }
+
+            bestPosition = position;
+            bestDistance = distance;
+
+            if (i == 0 && bestDistance >= _ragdollMinimumComfortDistance)
+            {
+                break;
+            }
+        }
+
+        return bestPosition;
+    }
+
+    private Vector3 GetRagdollFocusPoint()
+    {
+        if (_ragdollFocus != null)
+        {
+            return _ragdollFocus.position + Vector3.up * _ragdollFocusHeight;
+        }
+
+        return _target.position + _thirdPersonOffset;
+    }
+
+    private float GetRagdollYaw(Vector3 throwVelocity)
+    {
+        throwVelocity.y = 0f;
+
+        if (throwVelocity.sqrMagnitude <= 0.001f)
+        {
+            return _target.eulerAngles.y;
+        }
+
+        return Quaternion.LookRotation(throwVelocity.normalized, Vector3.up).eulerAngles.y;
+    }
+
+    private float GetCurrentCameraYaw(Vector3 focusPosition)
+    {
+        Vector3 cameraDirection = transform.position - focusPosition;
+        cameraDirection.y = 0f;
+
+        if (cameraDirection.sqrMagnitude <= 0.001f)
+        {
+            return _target.eulerAngles.y;
+        }
+
+        return Quaternion.LookRotation(-cameraDirection.normalized, Vector3.up).eulerAngles.y;
     }
 
     private Vector3 GetThirdPersonCameraPosition(
@@ -259,6 +387,13 @@ public class CameraControl : MonoBehaviour
     private bool IsTargetCollider(Collider hitCollider)
     {
         return hitCollider.transform == _target ||
-               hitCollider.transform.IsChildOf(_target);
+               hitCollider.transform.IsChildOf(_target) ||
+               IsExtraIgnoredCollider(hitCollider);
+    }
+
+    private bool IsExtraIgnoredCollider(Collider hitCollider)
+    {
+        return _extraCollisionIgnoreRoot != null &&
+               hitCollider.transform.IsChildOf(_extraCollisionIgnoreRoot);
     }
 }

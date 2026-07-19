@@ -7,6 +7,8 @@ namespace Tentacle
         Grabbing,
         Lifting,
         Holding,
-        Releasing
+        Throwing,
+        Recovering,
+        Cooldown
     }
 }

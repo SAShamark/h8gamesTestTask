@@ -168,8 +168,8 @@ Material:
     - _FinalColor: {r: 1, g: 1, b: 1, a: 1}
     - _MainTexChannels: {r: 1, g: 0, b: 0, a: 0}
     - _RampColorTint: {r: 1, g: 1, b: 1, a: 1}
-    - _RampColorTint_1: {r: 0.5754717, g: 0.53679025, b: 0.5238964, a: 1}
-    - _Ramp_Smoke_Color_1: {r: 0.21698111, g: 0.19504906, b: 0.19139372, a: 1}
-    - _Ramp_Smoke_Color_2: {r: 0.34117648, g: 0.31583968, b: 0.3019608, a: 1}
+    - _RampColorTint_1: {r: 0.9245283, g: 0.8943369, b: 0.8852795, a: 1}
+    - _Ramp_Smoke_Color_1: {r: 0.21698102, g: 0.19504899, b: 0.19139364, a: 1}
+    - _Ramp_Smoke_Color_2: {r: 0.34117642, g: 0.31583962, b: 0.30196074, a: 1}
     - _Vector2: {r: 0, g: -0.25, b: 0, a: 0}
   m_BuildTextureStacks: []

@@ -12,10 +12,13 @@ public class CharacterRagdollLogic
     [SerializeField] private float _settledVelocity = 0.75f;
     [SerializeField] private float _maximumThrowVelocity = 9f;
     [SerializeField] private float _groundCheckDistance = 0.75f;
+    [SerializeField] private float _groundContactTolerance = 0.08f;
     [SerializeField] private LayerMask _groundLayers = ~0;
 
     [Header("Recovery")]
-    [SerializeField] private float _poseBlendDuration = 0.35f;
+    [SerializeField] private float _groundedPauseBeforeRecovery = 0.18f;
+    [SerializeField] private float _poseBlendDuration = 0.7f;
+    [SerializeField] private float _animatedPoseSettleTime = 0.12f;
 
     private Transform _characterTransform;
     private Transform _modelTransform;
@@ -23,7 +26,12 @@ public class CharacterRagdollLogic
     private Animator _animator;
     private Rigidbody _hipsBody;
     private Rigidbody[] _bodies;
+    private Rigidbody[] _captureAnchorBodies;
+    private Vector3[] _captureAnchorLocalPositions;
+    private Quaternion[] _captureAnchorLocalRotations;
     private Collider[] _colliders;
+    private SkinnedMeshRenderer[] _renderers;
+    private bool[] _rendererUpdateWhenOffscreen;
     private Transform[] _bones;
     private Vector3[] _ragdollLocalPositions;
     private Quaternion[] _ragdollLocalRotations;
@@ -33,8 +41,14 @@ public class CharacterRagdollLogic
     private Quaternion _modelLocalRotation;
     private Vector3 _hipsCharacterLocalPosition;
     private Quaternion _hipsCharacterLocalRotation;
+    private Vector3 _capturedHipsPosition;
+    private Quaternion _capturedHipsRotation;
     private bool _isRagdollActive;
+    private bool _isCaptured;
     private readonly RaycastHit[] _groundHits = new RaycastHit[GroundHitCapacity];
+
+    public Transform ModelTransform => _modelTransform;
+    public Transform HipsTransform => _hipsBody.transform;
 
     public void Initialize(Transform characterTransform, Animator animator)
     {
@@ -48,7 +62,12 @@ public class CharacterRagdollLogic
         Transform hips = animator.GetBoneTransform(HumanBodyBones.Hips);
         _hipsBody = hips.GetComponent<Rigidbody>();
         _bodies = _modelTransform.GetComponentsInChildren<Rigidbody>(true);
+        _captureAnchorBodies = GetCaptureAnchorBodies(animator);
+        _captureAnchorLocalPositions = new Vector3[_captureAnchorBodies.Length];
+        _captureAnchorLocalRotations = new Quaternion[_captureAnchorBodies.Length];
         _colliders = GetRagdollColliders();
+        _renderers = _modelTransform.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+        _rendererUpdateWhenOffscreen = new bool[_renderers.Length];
         _bones = new Transform[_bodies.Length];
         _ragdollLocalPositions = new Vector3[_bodies.Length];
         _ragdollLocalRotations = new Quaternion[_bodies.Length];
@@ -60,18 +79,75 @@ public class CharacterRagdollLogic
             _bones[i] = _bodies[i].transform;
         }
 
+        for (int i = 0; i < _renderers.Length; i++)
+        {
+            _rendererUpdateWhenOffscreen[i] = _renderers[i].updateWhenOffscreen;
+        }
+
         _hipsCharacterLocalPosition = _characterTransform.InverseTransformPoint(hips.position);
         _hipsCharacterLocalRotation = Quaternion.Inverse(_characterTransform.rotation) * hips.rotation;
         IgnoreSelfCollisions();
         DisableRagdoll();
     }
 
+    public void BeginCapture()
+    {
+        ActivateRagdoll();
+        CaptureAnchorPose();
+        SetCaptureAnchorsKinematic(true);
+        _capturedHipsPosition = _hipsBody.position;
+        _capturedHipsRotation = _hipsBody.rotation;
+        _isCaptured = true;
+    }
+
+    public void SetCapturedPose(Vector3 position, Quaternion rotation)
+    {
+        if (!_isRagdollActive)
+        {
+            return;
+        }
+
+        _capturedHipsPosition = position + rotation * _hipsCharacterLocalPosition;
+        _capturedHipsRotation = rotation * _hipsCharacterLocalRotation;
+    }
+
+    public void UpdateCapturedPose()
+    {
+        if (!_isCaptured)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _captureAnchorBodies.Length; i++)
+        {
+            Rigidbody body = _captureAnchorBodies[i];
+            Vector3 position = _capturedHipsPosition +
+                               _capturedHipsRotation * _captureAnchorLocalPositions[i];
+            Quaternion rotation = _capturedHipsRotation * _captureAnchorLocalRotations[i];
+            body.MovePosition(position);
+            body.MoveRotation(rotation);
+        }
+    }
+
     public void BeginThrow()
+    {
+        _isCaptured = false;
+
+        if (!_isRagdollActive)
+        {
+            ActivateRagdoll();
+        }
+
+        SetBodiesKinematic(false);
+    }
+
+    private void ActivateRagdoll()
     {
         Vector3 hipsPosition = _hipsBody.position;
         Quaternion hipsRotation = _hipsBody.rotation;
 
         _animator.enabled = false;
+        SetRenderersUpdateWhenOffscreen(true);
         _modelTransform.SetParent(null, true);
         EnableRagdoll();
 
@@ -111,15 +187,36 @@ public class CharacterRagdollLogic
         }
     }
 
+    public IEnumerator WaitForGroundContact()
+    {
+        float timer = 0f;
+
+        while (timer < _maximumThrowTime)
+        {
+            timer += Time.deltaTime;
+            FollowHips();
+
+            if (IsTouchingGround())
+            {
+                yield break;
+            }
+
+            yield return null;
+        }
+    }
+
     public IEnumerator Recover()
     {
-        FreezeRagdoll();
-        SetCollidersEnabled(false);
-        AlignCharacterToRagdoll();
-        _modelTransform.SetParent(_modelParent, true);
+        yield return WaitBeforeRecovery();
 
-        CaptureCurrentPose(_ragdollLocalPositions, _ragdollLocalRotations);
+        FreezeRagdoll();
+        CaptureWorldPose(_ragdollLocalPositions, _ragdollLocalRotations);
+        AlignCharacterToRagdoll();
+        SetCollidersEnabled(false);
+        _modelTransform.SetParent(_modelParent, true);
         _modelTransform.SetLocalPositionAndRotation(_modelLocalPosition, _modelLocalRotation);
+        RestoreWorldPose(_ragdollLocalPositions, _ragdollLocalRotations);
+        CaptureCurrentPose(_ragdollLocalPositions, _ragdollLocalRotations);
         CaptureAnimatedPose();
         RestorePose(_ragdollLocalPositions, _ragdollLocalRotations);
 
@@ -137,6 +234,7 @@ public class CharacterRagdollLogic
         RestorePose(_animatedLocalPositions, _animatedLocalRotations);
         DisableRagdoll();
         _animator.enabled = true;
+        RestoreRendererUpdateWhenOffscreen();
     }
 
     public void CancelRagdoll()
@@ -147,11 +245,14 @@ public class CharacterRagdollLogic
         }
 
         FreezeRagdoll();
+        _isCaptured = false;
         AlignCharacterToRagdoll();
+        SetCollidersEnabled(false);
         _modelTransform.SetParent(_modelParent, true);
         _modelTransform.SetLocalPositionAndRotation(_modelLocalPosition, _modelLocalRotation);
         DisableRagdoll();
         _animator.enabled = true;
+        RestoreRendererUpdateWhenOffscreen();
     }
 
     private Collider[] GetRagdollColliders()
@@ -182,6 +283,67 @@ public class CharacterRagdollLogic
         }
 
         return ragdollColliders;
+    }
+
+    private static Rigidbody[] GetCaptureAnchorBodies(Animator animator)
+    {
+        HumanBodyBones[] anchorBones =
+        {
+            HumanBodyBones.Hips,
+            HumanBodyBones.Spine,
+            HumanBodyBones.Chest,
+            HumanBodyBones.UpperChest,
+            HumanBodyBones.LeftUpperArm,
+            HumanBodyBones.RightUpperArm
+        };
+        Rigidbody[] anchors = new Rigidbody[anchorBones.Length];
+        int anchorsCount = 0;
+
+        for (int i = 0; i < anchorBones.Length; i++)
+        {
+            Transform bone = animator.GetBoneTransform(anchorBones[i]);
+
+            if (bone == null || !bone.TryGetComponent(out Rigidbody body))
+            {
+                continue;
+            }
+
+            anchors[anchorsCount] = body;
+            anchorsCount++;
+        }
+
+        if (anchorsCount == anchors.Length)
+        {
+            return anchors;
+        }
+
+        Rigidbody[] result = new Rigidbody[anchorsCount];
+        System.Array.Copy(anchors, result, anchorsCount);
+        return result;
+    }
+
+    private void CaptureAnchorPose()
+    {
+        Quaternion inverseHipsRotation = Quaternion.Inverse(_hipsBody.rotation);
+
+        for (int i = 0; i < _captureAnchorBodies.Length; i++)
+        {
+            Rigidbody body = _captureAnchorBodies[i];
+            _captureAnchorLocalPositions[i] = inverseHipsRotation *
+                                              (body.position - _hipsBody.position);
+            _captureAnchorLocalRotations[i] = inverseHipsRotation * body.rotation;
+        }
+    }
+
+    private void SetCaptureAnchorsKinematic(bool isKinematic)
+    {
+        for (int i = 0; i < _captureAnchorBodies.Length; i++)
+        {
+            Rigidbody body = _captureAnchorBodies[i];
+            body.velocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.isKinematic = isKinematic;
+        }
     }
 
     private void EnableRagdoll()
@@ -230,9 +392,22 @@ public class CharacterRagdollLogic
 
     private void DisableRagdoll()
     {
+        _isCaptured = false;
         FreezeRagdoll();
         SetCollidersEnabled(false);
         _isRagdollActive = false;
+    }
+
+    private IEnumerator WaitBeforeRecovery()
+    {
+        float timer = 0f;
+
+        while (timer < _groundedPauseBeforeRecovery)
+        {
+            timer += Time.deltaTime;
+            FollowHips();
+            yield return null;
+        }
     }
 
     private void FollowHips()
@@ -249,17 +424,62 @@ public class CharacterRagdollLogic
             _groundCheckDistance, out _);
     }
 
+    private bool IsTouchingGround()
+    {
+        for (int i = 0; i < _colliders.Length; i++)
+        {
+            Bounds bounds = _colliders[i].bounds;
+            float checkDistance = bounds.extents.y + _groundContactTolerance;
+
+            if (TryGetGroundPoint(bounds.center, checkDistance, out _))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void AlignCharacterToRagdoll()
     {
         Vector3 hipsPosition = _hipsBody.position;
         Vector3 rootPosition = hipsPosition - GetHipsWorldOffset();
-        if (TryGetGroundPoint(hipsPosition + Vector3.up, 4f, out Vector3 groundPoint))
+
+        if (TryGetHighestGroundPointUnderRagdoll(out Vector3 groundPoint))
         {
             rootPosition.y = groundPoint.y;
         }
 
         _characterTransform.SetPositionAndRotation(rootPosition,
             GetUprightRotation(_characterTransform.rotation));
+    }
+
+    private bool TryGetHighestGroundPointUnderRagdoll(out Vector3 groundPoint)
+    {
+        bool hasGround = false;
+        groundPoint = default;
+
+        for (int i = 0; i < _colliders.Length; i++)
+        {
+            Bounds bounds = _colliders[i].bounds;
+            Vector3 origin = bounds.center + Vector3.up * 0.25f;
+            float distance = bounds.extents.y + 1.5f;
+
+            if (!TryGetGroundPoint(origin, distance, out Vector3 hitPoint))
+            {
+                continue;
+            }
+
+            if (hasGround && hitPoint.y <= groundPoint.y)
+            {
+                continue;
+            }
+
+            hasGround = true;
+            groundPoint = hitPoint;
+        }
+
+        return hasGround;
     }
 
     private Vector3 GetHipsWorldOffset()
@@ -291,7 +511,8 @@ public class CharacterRagdollLogic
         {
             RaycastHit hit = _groundHits[i];
 
-            if (hit.collider.transform.IsChildOf(_modelTransform) ||
+            if (hit.collider == null ||
+                hit.collider.transform.IsChildOf(_modelTransform) ||
                 hit.distance >= nearestDistance)
             {
                 continue;
@@ -328,10 +549,26 @@ public class CharacterRagdollLogic
         }
     }
 
+    private void SetRenderersUpdateWhenOffscreen(bool updateWhenOffscreen)
+    {
+        for (int i = 0; i < _renderers.Length; i++)
+        {
+            _renderers[i].updateWhenOffscreen = updateWhenOffscreen;
+        }
+    }
+
+    private void RestoreRendererUpdateWhenOffscreen()
+    {
+        for (int i = 0; i < _renderers.Length; i++)
+        {
+            _renderers[i].updateWhenOffscreen = _rendererUpdateWhenOffscreen[i];
+        }
+    }
+
     private void CaptureAnimatedPose()
     {
         _animator.enabled = true;
-        _animator.Update(0f);
+        _animator.Update(Mathf.Max(0f, _animatedPoseSettleTime));
         CaptureCurrentPose(_animatedLocalPositions, _animatedLocalRotations);
         _animator.enabled = false;
     }
@@ -342,6 +579,23 @@ public class CharacterRagdollLogic
         {
             positions[i] = _bones[i].localPosition;
             rotations[i] = _bones[i].localRotation;
+        }
+    }
+
+    private void CaptureWorldPose(Vector3[] positions, Quaternion[] rotations)
+    {
+        for (int i = 0; i < _bones.Length; i++)
+        {
+            positions[i] = _bones[i].position;
+            rotations[i] = _bones[i].rotation;
+        }
+    }
+
+    private void RestoreWorldPose(Vector3[] positions, Quaternion[] rotations)
+    {
+        for (int i = 0; i < _bones.Length; i++)
+        {
+            _bones[i].SetPositionAndRotation(positions[i], rotations[i]);
         }
     }
 
