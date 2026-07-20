@@ -32,10 +32,17 @@ namespace Tentacle
         [SerializeField] private float _wrapTurns = 1.05f;
         [SerializeField] private float _wrapVerticalOffset = 0.05f;
         [SerializeField] private float _releaseDuration = 0.28f;
+        [SerializeField, Range(0f, 1f)] private float _releaseShapeSmoothing = 0.65f;
+        [SerializeField, Range(0, 4)] private int _releaseShapeSmoothingIterations = 2;
 
         [Header("Follow Through")]
         [SerializeField] private float _followThroughDuration = 0.2f;
         [SerializeField] private float _followThroughAngle = 12f;
+        [SerializeField] private float _followThroughRootControl = 0.4f;
+        [SerializeField] private float _followThroughTipControl = 0.55f;
+        [SerializeField] private float _followThroughArcHeight = 0.35f;
+        [SerializeField, Range(0f, 1f)] private float _followThroughShapeSmoothing = 0.7f;
+        [SerializeField, Range(0, 5)] private int _followThroughShapeSmoothingIterations = 3;
 
         [Header("Retraction")]
         [SerializeField] private float _retractDuration = 0.45f;
@@ -213,15 +220,30 @@ namespace Tentacle
 
         private void UpdateFollowThrough()
         {
-            Quaternion rotation = Quaternion.AngleAxis(
-                _followThroughAngle * _followThroughProgress,
-                _followThroughAxis);
             Vector3 pivot = _followThroughStartPositions[0];
+            Quaternion tipRotation = Quaternion.AngleAxis(
+                _followThroughAngle * _followThroughProgress, _followThroughAxis);
+            Vector3 tipPosition = pivot + tipRotation *
+                (_followThroughStartPositions[^1] - pivot);
+            Vector3 rootTangent = GetFollowThroughRootTangent();
+            Vector3 direction = (tipPosition - pivot).normalized;
+            Vector3 bendDirection = GetFollowThroughBendDirection(pivot, tipPosition);
+            float distance = Vector3.Distance(pivot, tipPosition);
+            Vector3 firstControl = pivot + rootTangent *
+                                   (distance * _followThroughRootControl) +
+                                   bendDirection * (distance * _followThroughArcHeight);
+            Vector3 secondControl = tipPosition - direction *
+                                    (distance * _followThroughTipControl) +
+                                    bendDirection * (distance * _followThroughArcHeight);
+
+            BuildCurveSamples(pivot, firstControl, secondControl, tipPosition);
+            PlaceBonesOnCurve(_targetPositions, _bones.Length - 1);
+            SmoothFollowThroughShape();
+            CalculateFollowThroughRotations(rootTangent);
 
             for (int i = 0; i < _bones.Length; i++)
             {
-                Vector3 position = pivot + rotation *
-                    (_followThroughStartPositions[i] - pivot);
+                Vector3 position = _targetPositions[i];
 
                 if (i > 0)
                 {
@@ -229,7 +251,7 @@ namespace Tentacle
                 }
 
                 _bones[i].position = position;
-                _bones[i].rotation = rotation * _followThroughStartRotations[i];
+                _bones[i].rotation = _targetRotations[i];
             }
 
             if (_followThroughProgress < 1f)
@@ -246,6 +268,65 @@ namespace Tentacle
                     _retractDuration)
                 .SetEase(Ease.Linear)
                 .SetUpdate(UpdateType.Fixed);
+        }
+
+        private Vector3 GetFollowThroughRootTangent()
+        {
+            return (_followThroughStartPositions[1] -
+                   _followThroughStartPositions[0]).normalized;
+        }
+
+        private Vector3 GetFollowThroughBendDirection(Vector3 pivot, Vector3 tipPosition)
+        {
+            Vector3 direction = (tipPosition - pivot).normalized;
+            Vector3 bendDirection = Vector3.Cross(_followThroughAxis, direction).normalized;
+            int middleIndex = _bones.Length / 2;
+            Vector3 middleLine = Vector3.Lerp(pivot, tipPosition,
+                _boneDistanceRatios[middleIndex]);
+            Vector3 currentBend = _followThroughStartPositions[middleIndex] - middleLine;
+
+            if (Vector3.Dot(bendDirection, currentBend) < 0f)
+            {
+                bendDirection = -bendDirection;
+            }
+
+            return bendDirection;
+        }
+
+        private void SmoothFollowThroughShape()
+        {
+            if (_followThroughShapeSmoothing <= 0f ||
+                _followThroughShapeSmoothingIterations <= 0)
+            {
+                return;
+            }
+
+            for (int iteration = 0; iteration < _followThroughShapeSmoothingIterations; iteration++)
+            {
+                for (int i = 1; i < _bones.Length - 1; i++)
+                {
+                    Vector3 smoothedPosition = (_targetPositions[i - 1] +
+                                                _targetPositions[i + 1]) * 0.5f;
+                    _targetPositions[i] = Vector3.Lerp(
+                        _targetPositions[i], smoothedPosition, _followThroughShapeSmoothing);
+                }
+            }
+        }
+
+        private void CalculateFollowThroughRotations(Vector3 rootTangent)
+        {
+            Vector3 transportedUp = GetPerpendicularUp(
+                _followThroughStartRotations[0] * Vector3.up, rootTangent);
+
+            for (int i = 0; i < _bones.Length - 1; i++)
+            {
+                Vector3 tangent = (_targetPositions[i + 1] - _targetPositions[i]).normalized;
+                transportedUp = GetPerpendicularUp(transportedUp, tangent);
+                _targetRotations[i] = Quaternion.LookRotation(tangent, transportedUp) *
+                                      _rotationOffsets[i];
+            }
+
+            _targetRotations[^1] = _targetRotations[^2];
         }
 
         private void CaptureFollowThroughStartPose()
@@ -467,11 +548,36 @@ namespace Tentacle
                     : GetRingPosition(pathProgress - 1f);
             }
 
+            if (_isReleasing)
+            {
+                SmoothReleaseShape(wrapStartIndex);
+            }
+
             if (_wrapWeight <= 0f)
             {
                 for (int i = 0; i < _bones.Length; i++)
                 {
                     _targetPositions[i] = _reachPositions[i];
+                }
+            }
+        }
+
+        private void SmoothReleaseShape(int startIndex)
+        {
+            if (_releaseShapeSmoothing <= 0f ||
+                _releaseShapeSmoothingIterations <= 0)
+            {
+                return;
+            }
+
+            for (int iteration = 0; iteration < _releaseShapeSmoothingIterations; iteration++)
+            {
+                for (int i = Mathf.Max(1, startIndex - 1); i < _bones.Length - 1; i++)
+                {
+                    Vector3 smoothedPosition = (_targetPositions[i - 1] +
+                                                _targetPositions[i + 1]) * 0.5f;
+                    _targetPositions[i] = Vector3.Lerp(
+                        _targetPositions[i], smoothedPosition, _releaseShapeSmoothing);
                 }
             }
         }

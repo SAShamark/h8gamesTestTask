@@ -8,6 +8,15 @@ namespace Character.Ragdoll
         private readonly float[] _bodyAngularDrag;
         private readonly float[] _bodyMaximumAngularVelocity;
         private readonly RigidbodyInterpolation[] _bodyInterpolation;
+        private readonly int[] _bodySolverIterations;
+        private readonly int[] _bodySolverVelocityIterations;
+        private readonly float[] _bodyMaxDepenetrationVelocity;
+        private readonly Joint[] _joints;
+        private readonly bool[] _jointPreprocessing;
+        private readonly CharacterJoint[] _characterJoints;
+        private readonly bool[] _characterJointProjection;
+        private readonly ConfigurableJoint[] _configurableJoints;
+        private readonly JointProjectionMode[] _configurableJointProjectionModes;
         private readonly SkinnedMeshRenderer[] _renderers;
         private readonly bool[] _rendererUpdateWhenOffscreen;
         private readonly Vector3 _hipsCharacterLocalPosition;
@@ -30,6 +39,9 @@ namespace Character.Ragdoll
             _bodyAngularDrag = new float[Bodies.Length];
             _bodyMaximumAngularVelocity = new float[Bodies.Length];
             _bodyInterpolation = new RigidbodyInterpolation[Bodies.Length];
+            _bodySolverIterations = new int[Bodies.Length];
+            _bodySolverVelocityIterations = new int[Bodies.Length];
+            _bodyMaxDepenetrationVelocity = new float[Bodies.Length];
 
             for (int i = 0; i < Bodies.Length; i++)
             {
@@ -39,6 +51,33 @@ namespace Character.Ragdoll
                 _bodyAngularDrag[i] = body.angularDrag;
                 _bodyMaximumAngularVelocity[i] = body.maxAngularVelocity;
                 _bodyInterpolation[i] = body.interpolation;
+                _bodySolverIterations[i] = body.solverIterations;
+                _bodySolverVelocityIterations[i] = body.solverVelocityIterations;
+                _bodyMaxDepenetrationVelocity[i] = body.maxDepenetrationVelocity;
+            }
+
+            _joints = ModelTransform.GetComponentsInChildren<Joint>(true);
+            _jointPreprocessing = new bool[_joints.Length];
+
+            for (int i = 0; i < _joints.Length; i++)
+            {
+                _jointPreprocessing[i] = _joints[i].enablePreprocessing;
+            }
+
+            _characterJoints = ModelTransform.GetComponentsInChildren<CharacterJoint>(true);
+            _characterJointProjection = new bool[_characterJoints.Length];
+
+            for (int i = 0; i < _characterJoints.Length; i++)
+            {
+                _characterJointProjection[i] = _characterJoints[i].enableProjection;
+            }
+
+            _configurableJoints = ModelTransform.GetComponentsInChildren<ConfigurableJoint>(true);
+            _configurableJointProjectionModes = new JointProjectionMode[_configurableJoints.Length];
+
+            for (int i = 0; i < _configurableJoints.Length; i++)
+            {
+                _configurableJointProjectionModes[i] = _configurableJoints[i].projectionMode;
             }
 
             Colliders = GetRagdollColliders();
@@ -77,6 +116,7 @@ namespace Character.Ragdoll
             Animator.enabled = false;
             SetRenderersUpdateWhenOffscreen(true);
             SetBodyInterpolation(RigidbodyInterpolation.Interpolate);
+            ApplyJointStability();
             ModelTransform.SetParent(null, true);
             SetCollidersEnabled(true);
             SetBodiesKinematic(false);
@@ -88,6 +128,7 @@ namespace Character.Ragdoll
         public void Disable()
         {
             RestoreBodyDynamics();
+            RestoreJointStability();
             RestoreBodyInterpolation();
             Freeze();
             SetCollidersEnabled(false);
@@ -104,6 +145,9 @@ namespace Character.Ragdoll
                 body.angularDrag = Mathf.Max(_bodyAngularDrag[i], angularDrag);
                 body.maxAngularVelocity = Mathf.Min(_bodyMaximumAngularVelocity[i],
                     maximumAngularVelocity);
+                body.solverIterations = Mathf.Max(_bodySolverIterations[i], 16);
+                body.solverVelocityIterations = Mathf.Max(_bodySolverVelocityIterations[i], 12);
+                body.maxDepenetrationVelocity = Mathf.Min(_bodyMaxDepenetrationVelocity[i], 1.5f);
             }
         }
 
@@ -115,6 +159,45 @@ namespace Character.Ragdoll
                 body.drag = _bodyDrag[i];
                 body.angularDrag = _bodyAngularDrag[i];
                 body.maxAngularVelocity = _bodyMaximumAngularVelocity[i];
+                body.solverIterations = _bodySolverIterations[i];
+                body.solverVelocityIterations = _bodySolverVelocityIterations[i];
+                body.maxDepenetrationVelocity = _bodyMaxDepenetrationVelocity[i];
+            }
+        }
+
+        private void ApplyJointStability()
+        {
+            for (int i = 0; i < _joints.Length; i++)
+            {
+                _joints[i].enablePreprocessing = false;
+            }
+
+            for (int i = 0; i < _characterJoints.Length; i++)
+            {
+                _characterJoints[i].enableProjection = true;
+            }
+
+            for (int i = 0; i < _configurableJoints.Length; i++)
+            {
+                _configurableJoints[i].projectionMode = JointProjectionMode.PositionAndRotation;
+            }
+        }
+
+        private void RestoreJointStability()
+        {
+            for (int i = 0; i < _joints.Length; i++)
+            {
+                _joints[i].enablePreprocessing = _jointPreprocessing[i];
+            }
+
+            for (int i = 0; i < _characterJoints.Length; i++)
+            {
+                _characterJoints[i].enableProjection = _characterJointProjection[i];
+            }
+
+            for (int i = 0; i < _configurableJoints.Length; i++)
+            {
+                _configurableJoints[i].projectionMode = _configurableJointProjectionModes[i];
             }
         }
 
