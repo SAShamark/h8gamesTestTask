@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 namespace Tentacle
@@ -7,8 +8,8 @@ namespace Tentacle
     [Serializable]
     public class TentaclePoseSolver
     {
-        private const int CurveSamplesCount = 64;
-        private const int ArcHeightSearchIterations = 12;
+        private const int CURVE_SAMPLES_COUNT = 64;
+        private const int ARC_HEIGHT_SEARCH_ITERATIONS = 12;
 
         [SerializeField] private float _reachDuration = 0.42f;
         [SerializeField] private float _targetHeight = 1f;
@@ -76,6 +77,11 @@ namespace Tentacle
         private bool _isReleasing;
         private bool _isFollowingThrough;
         private bool _isRetracting;
+        private bool _shouldReach;
+        private Sequence _reachSequence;
+        private Tween _releaseTween;
+        private Tween _followThroughTween;
+        private Tween _retractTween;
 
         public bool IsWrapped => _wrapWeight >= 1f;
         public bool IsUnwrapped => _isReleasing && _wrapWeight <= 0f;
@@ -87,6 +93,12 @@ namespace Tentacle
         public void BeginRelease()
         {
             _isReleasing = true;
+            _reachSequence.Pause();
+            _releaseTween?.Kill();
+            _releaseTween = DOTween.To(() => _wrapWeight,
+                    value => _wrapWeight = value, 0f,
+                    _releaseDuration * _wrapWeight)
+                .SetEase(Ease.Linear);
         }
 
         public void BeginFollowThrough(Vector3 axis)
@@ -99,6 +111,13 @@ namespace Tentacle
             _followThroughAxis = axis.normalized;
 
             CaptureFollowThroughStartPose();
+            _releaseTween?.Kill();
+            _followThroughTween?.Kill();
+            _followThroughTween = DOTween.To(
+                    () => _followThroughProgress,
+                    value => _followThroughProgress = value,
+                    1f, _followThroughDuration)
+                .SetEase(Ease.OutSine);
         }
 
         public void Initialize(Transform rootBone, float groundHeight)
@@ -107,18 +126,19 @@ namespace Tentacle
             _minimumWorldHeight = groundHeight + _minimumHeightOffset;
             CreateBuffers();
             CaptureBaseLocalPose();
+            CreateReachSequence();
         }
 
-        public void UpdatePose(bool shouldReach, Transform target, float deltaTime)
+        public void UpdatePose(bool shouldReach, Transform target)
         {
             if (_isRetracting)
             {
-                UpdateRetraction(deltaTime);
+                UpdateRetraction();
                 return;
             }
 
             PrepareProceduralSourcePose(shouldReach);
-            UpdatePhaseWeights(shouldReach, deltaTime);
+            SetReaching(shouldReach);
 
             if (_windupWeight <= 0f)
             {
@@ -138,16 +158,22 @@ namespace Tentacle
             ApplyTargetPose();
         }
 
-        private void UpdateRetraction(float deltaTime)
+        public void Dispose()
+        {
+            _reachSequence?.Kill();
+            _releaseTween?.Kill();
+            _followThroughTween?.Kill();
+            _retractTween?.Kill();
+        }
+
+        private void UpdateRetraction()
         {
             if (_isFollowingThrough)
             {
-                UpdateFollowThrough(deltaTime);
+                UpdateFollowThrough();
                 return;
             }
 
-            _retractProgress = Mathf.MoveTowards(
-                _retractProgress, 1f, deltaTime / _retractDuration);
             float blend = Mathf.SmoothStep(0f, 1f, _retractProgress);
 
             for (int i = 0; i < _bones.Length; i++)
@@ -175,16 +201,19 @@ namespace Tentacle
             _windupWeight = 0f;
             _reachWeight = 0f;
             _wrapWeight = 0f;
+            _shouldReach = false;
+            _isReleasing = false;
+            _reachSequence.Rewind();
             RestoreBaseLocalPose();
             _hasActivePose = false;
             _isRetracting = false;
         }
 
-        private void UpdateFollowThrough(float deltaTime)
+        private void UpdateFollowThrough()
         {
-            _followThroughProgress = Mathf.MoveTowards(_followThroughProgress, 1f, deltaTime / _followThroughDuration);
-            float progress = Mathf.Sin(_followThroughProgress * Mathf.PI * 0.5f);
-            Quaternion rotation = Quaternion.AngleAxis(_followThroughAngle * progress, _followThroughAxis);
+            Quaternion rotation = Quaternion.AngleAxis(
+                _followThroughAngle * _followThroughProgress,
+                _followThroughAxis);
             Vector3 pivot = _followThroughStartPositions[0];
 
             for (int i = 0; i < _bones.Length; i++)
@@ -209,6 +238,11 @@ namespace Tentacle
             CaptureRetractionStartLocalPose();
             _isFollowingThrough = false;
             _retractProgress = 0f;
+            _retractTween?.Kill();
+            _retractTween = DOTween.To(() => _retractProgress,
+                    value => _retractProgress = value, 1f,
+                    _retractDuration)
+                .SetEase(Ease.Linear);
         }
 
         private void CaptureFollowThroughStartPose()
@@ -244,46 +278,38 @@ namespace Tentacle
             RestoreSourceLocalPose();
         }
 
-        private void UpdatePhaseWeights(bool shouldReach, float deltaTime)
+        private void CreateReachSequence()
         {
-            if (_isReleasing)
+            _reachSequence = DOTween.Sequence()
+                .SetAutoKill(false)
+                .Pause();
+            _reachSequence.Append(DOTween.To(() => _windupWeight,
+                    value => _windupWeight = value, 1f, _windupDuration)
+                .SetEase(Ease.Linear));
+            _reachSequence.Append(DOTween.To(() => _reachWeight,
+                    value => _reachWeight = value, 1f, _reachDuration)
+                .SetEase(Ease.Linear));
+            _reachSequence.Append(DOTween.To(() => _wrapWeight,
+                    value => _wrapWeight = value, 1f, _wrapDuration)
+                .SetEase(Ease.Linear));
+        }
+
+        private void SetReaching(bool shouldReach)
+        {
+            if (_isReleasing || _shouldReach == shouldReach)
             {
-                _wrapWeight = Mathf.MoveTowards(
-                    _wrapWeight, 0f, deltaTime / _releaseDuration);
                 return;
             }
+
+            _shouldReach = shouldReach;
 
             if (shouldReach)
             {
-                _windupWeight = Mathf.MoveTowards(
-                    _windupWeight, 1f, deltaTime / _windupDuration);
-
-                if (_windupWeight >= 1f)
-                {
-                    _reachWeight = Mathf.MoveTowards(
-                        _reachWeight, 1f, deltaTime / _reachDuration);
-                }
-
-                if (_reachWeight >= 1f)
-                {
-                    _wrapWeight = Mathf.MoveTowards(_wrapWeight, 1f, deltaTime / _wrapDuration);
-                }
-
+                _reachSequence.PlayForward();
                 return;
             }
 
-            _wrapWeight = Mathf.MoveTowards(_wrapWeight, 0f, deltaTime / _wrapDuration);
-
-            if (_wrapWeight <= 0f)
-            {
-                _reachWeight = Mathf.MoveTowards(_reachWeight, 0f, deltaTime / _reachDuration);
-            }
-
-            if (_reachWeight <= 0f)
-            {
-                _windupWeight = Mathf.MoveTowards(
-                    _windupWeight, 0f, deltaTime / _windupDuration);
-            }
+            _reachSequence.PlayBackwards();
         }
 
         private void CacheAnimatedPose()
@@ -490,7 +516,7 @@ namespace Tentacle
             float minimumHeight = _minimumArcHeight;
             float maximumHeight = _chainLength;
 
-            for (int i = 0; i < ArcHeightSearchIterations; i++)
+            for (int i = 0; i < ARC_HEIGHT_SEARCH_ITERATIONS; i++)
             {
                 float height = (minimumHeight + maximumHeight) * 0.5f;
                 float curveLength = CalculateCurveLength(start, end, height);
@@ -514,9 +540,9 @@ namespace Tentacle
             Vector3 previousPoint = start;
             float length = 0f;
 
-            for (int i = 1; i < CurveSamplesCount; i++)
+            for (int i = 1; i < CURVE_SAMPLES_COUNT; i++)
             {
-                float time = i / (CurveSamplesCount - 1f);
+                float time = i / (CURVE_SAMPLES_COUNT - 1f);
                 Vector3 point = EvaluateBezier(start, firstControl, secondControl, end, time);
                 length += Vector3.Distance(previousPoint, point);
                 previousPoint = point;
@@ -537,9 +563,9 @@ namespace Tentacle
             _curveSamples[0] = start;
             _curveDistances[0] = 0f;
 
-            for (int i = 1; i < CurveSamplesCount; i++)
+            for (int i = 1; i < CURVE_SAMPLES_COUNT; i++)
             {
-                float time = i / (CurveSamplesCount - 1f);
+                float time = i / (CURVE_SAMPLES_COUNT - 1f);
                 _curveSamples[i] = EvaluateBezier(start, firstControl, secondControl, end, time);
                 _curveDistances[i] = _curveDistances[i - 1] +
                     Vector3.Distance(_curveSamples[i - 1], _curveSamples[i]);
@@ -557,7 +583,7 @@ namespace Tentacle
 
         private void PlaceBonesOnCurve(Vector3[] positions, int lastBoneIndex)
         {
-            float curveLength = _curveDistances[CurveSamplesCount - 1];
+            float curveLength = _curveDistances[CURVE_SAMPLES_COUNT - 1];
             int sampleIndex = 1;
             float lastBoneDistance = _boneDistanceRatios[lastBoneIndex];
 
@@ -566,7 +592,7 @@ namespace Tentacle
                 float targetDistance = curveLength *
                     (_boneDistanceRatios[boneIndex] / lastBoneDistance);
 
-                while (sampleIndex < CurveSamplesCount - 1 &&
+                while (sampleIndex < CURVE_SAMPLES_COUNT - 1 &&
                        _curveDistances[sampleIndex] < targetDistance)
                 {
                     sampleIndex++;
@@ -678,8 +704,8 @@ namespace Tentacle
             _retractStartLocalPositions = new Vector3[bonesCount];
             _retractStartLocalRotations = new Quaternion[bonesCount];
             _rotationOffsets = new Quaternion[bonesCount];
-            _curveSamples = new Vector3[CurveSamplesCount];
-            _curveDistances = new float[CurveSamplesCount];
+            _curveSamples = new Vector3[CURVE_SAMPLES_COUNT];
+            _curveDistances = new float[CURVE_SAMPLES_COUNT];
 
             for (int i = 1; i < bonesCount; i++)
             {

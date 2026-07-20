@@ -1,3 +1,5 @@
+using Character;
+using DG.Tweening;
 using UnityEngine;
 
 namespace Tentacle
@@ -8,7 +10,6 @@ namespace Tentacle
         private static readonly int IsAlertHash = Animator.StringToHash("IsAlert");
 
         [Header("References")]
-        [SerializeField] private Transform _target;
         [SerializeField] private Transform _model;
         [SerializeField] private Animator _animator;
 
@@ -39,10 +40,11 @@ namespace Tentacle
         [SerializeField] private float _throwHorizontalSpeed = 7f;
         [SerializeField] private float _throwUpwardSpeed = 2.5f;
 
+        private Transform _target;
         private ICapturableCharacter _capturableCharacter;
         private float _rotationVelocity;
         private float _liftProgress;
-        private float _releaseTime;
+        private float _releaseAngle;
         private Vector3 _captureStartPosition;
         private Vector3 _captureTargetPosition;
         private Vector3 _captureTargetCenter;
@@ -55,16 +57,15 @@ namespace Tentacle
         private bool _isReleasing;
         private bool _isAnimatorLockedForProceduralMotion;
         private bool _hasThrown;
+        private Tween _liftTween;
+        private Tween _backswingTween;
 
         public bool IsTargetInActionRadius { get; private set; }
 
-        private void Awake()
+        public void Initialize(Transform target)
         {
+            _target = target;
             _capturableCharacter = _target.GetComponent<ICapturableCharacter>();
-        }
-
-        private void Start()
-        {
             _animator.Play(_idleStateName, 0, 0f);
             _animator.Update(0f);
             _poseSolver.Initialize(_model.Find("DeformationSystem/Root_M"),
@@ -85,9 +86,16 @@ namespace Tentacle
             StartCaptureAfterWrapping();
             UpdateLift();
             UpdateRelease();
-            _poseSolver.UpdatePose(shouldReach, _target, Time.deltaTime);
+            _poseSolver.UpdatePose(shouldReach, _target);
             UnlockAnimatorAfterProceduralMotion();
             ResetCycleAfterRecovery();
+        }
+
+        private void OnDestroy()
+        {
+            _liftTween?.Kill();
+            _backswingTween?.Kill();
+            _poseSolver.Dispose();
         }
 
         private void StartCaptureAfterWrapping()
@@ -119,6 +127,7 @@ namespace Tentacle
             _captureTargetPosition = _captureTargetCenter -
                                      _captureTargetRotation * Vector3.up *
                                      _poseSolver.TargetCenterOffset;
+            StartLift();
         }
 
         private void UpdateLift()
@@ -128,10 +137,17 @@ namespace Tentacle
                 return;
             }
 
-            _liftProgress = Mathf.MoveTowards(
-                _liftProgress, 1f, Time.deltaTime / _liftDuration);
             GetLiftPose(out Vector3 position, out Quaternion rotation);
             _capturableCharacter.SetCapturedPose(position, rotation);
+        }
+
+        private void StartLift()
+        {
+            _liftProgress = 0f;
+            _liftTween?.Kill();
+            _liftTween = DOTween.To(() => _liftProgress,
+                    value => _liftProgress = value, 1f, _liftDuration)
+                .SetEase(Ease.Linear);
         }
 
         private void GetLiftPose(out Vector3 position, out Quaternion rotation)
@@ -152,7 +168,8 @@ namespace Tentacle
 
             if (!_isReleasing)
             {
-                UpdateThrowBackswing();
+                StartThrowBackswing();
+                SetReleasePose(_releaseAngle);
                 return;
             }
 
@@ -170,20 +187,23 @@ namespace Tentacle
             ThrowCharacter();
         }
 
-        private void UpdateThrowBackswing()
+        private void StartThrowBackswing()
         {
-            _releaseTime = Mathf.MoveTowards(
-                _releaseTime, _throwBackswingDuration, Time.deltaTime);
-            float progress = _releaseTime / _throwBackswingDuration;
-            float angle = -Mathf.Sin(progress * Mathf.PI * 0.5f) *
-                          _throwBackswingAngle;
-            SetReleasePose(angle);
-
-            if (_releaseTime < _throwBackswingDuration)
+            if (_backswingTween != null && _backswingTween.IsActive())
             {
                 return;
             }
 
+            _releaseAngle = 0f;
+            _backswingTween = DOTween.To(() => _releaseAngle,
+                    value => _releaseAngle = value,
+                    -_throwBackswingAngle, _throwBackswingDuration)
+                .SetEase(Ease.OutSine)
+                .OnComplete(BeginRelease);
+        }
+
+        private void BeginRelease()
+        {
             _isReleasing = true;
             _poseSolver.BeginRelease();
         }
@@ -247,7 +267,7 @@ namespace Tentacle
             }
 
             _liftProgress = 0f;
-            _releaseTime = 0f;
+            _releaseAngle = 0f;
             _hasThrown = false;
         }
 
