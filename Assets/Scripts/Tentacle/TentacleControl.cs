@@ -18,6 +18,7 @@ namespace Tentacle
         [SerializeField] private float _actionRadius = 6f;
 
         [Header("Animation")]
+        [SerializeField] private string _appearStateName = "RiseA";
         [SerializeField] private string _idleStateName = "IdleA";
 
         [Header("Rotation")]
@@ -55,6 +56,7 @@ namespace Tentacle
         private bool _isAlert;
         private bool _isCapturing;
         private bool _isReleasing;
+        private bool _isAppearing;
         private bool _isAnimatorLockedForProceduralMotion;
         private bool _hasThrown;
         private Tween _liftTween;
@@ -66,7 +68,7 @@ namespace Tentacle
         {
             _target = target;
             _capturableCharacter = _target.GetComponent<ICapturableCharacter>();
-            _animator.Play(_idleStateName, 0, 0f);
+            PlayAppearAnimation();
             _animator.Update(0f);
             _poseSolver.Initialize(_model.Find("DeformationSystem/Root_M"),
                 transform.position.y);
@@ -75,8 +77,15 @@ namespace Tentacle
 
         private void Update()
         {
+            UpdateAppearance();
             UpdateDetection();
             UpdateRotation();
+        }
+
+        private void FixedUpdate()
+        {
+            UpdateLift();
+            UpdateRelease();
         }
 
         private void LateUpdate()
@@ -84,8 +93,6 @@ namespace Tentacle
             bool shouldReach = IsTargetInActionRadius && !_hasThrown;
             LockAnimatorForProceduralMotion(shouldReach);
             StartCaptureAfterWrapping();
-            UpdateLift();
-            UpdateRelease();
             _poseSolver.UpdatePose(shouldReach, _target);
             UnlockAnimatorAfterProceduralMotion();
             ResetCycleAfterRecovery();
@@ -147,7 +154,8 @@ namespace Tentacle
             _liftTween?.Kill();
             _liftTween = DOTween.To(() => _liftProgress,
                     value => _liftProgress = value, 1f, _liftDuration)
-                .SetEase(Ease.Linear);
+                .SetEase(Ease.Linear)
+                .SetUpdate(UpdateType.Fixed);
         }
 
         private void GetLiftPose(out Vector3 position, out Quaternion rotation)
@@ -199,6 +207,7 @@ namespace Tentacle
                     value => _releaseAngle = value,
                     -_throwBackswingAngle, _throwBackswingDuration)
                 .SetEase(Ease.OutSine)
+                .SetUpdate(UpdateType.Fixed)
                 .OnComplete(BeginRelease);
         }
 
@@ -271,12 +280,37 @@ namespace Tentacle
             _hasThrown = false;
         }
 
+        private void PlayAppearAnimation()
+        {
+            _isAppearing = true;
+            _isAlert = false;
+            _animator.SetBool(IsAlertHash, false);
+            _animator.Play(_appearStateName, 0, 0f);
+        }
+
+        private void UpdateAppearance()
+        {
+            if (!_isAppearing)
+            {
+                return;
+            }
+
+            AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
+
+            if (stateInfo.IsName(_appearStateName) || _animator.IsInTransition(0))
+            {
+                return;
+            }
+
+            _isAppearing = false;
+        }
+
         private void UpdateDetection()
         {
             float sqrDistance = GetFlatSqrDistanceToTarget();
             IsTargetInActionRadius = sqrDistance <= _actionRadius * _actionRadius;
 
-            if (_isAnimatorLockedForProceduralMotion)
+            if (_isAppearing || _isAnimatorLockedForProceduralMotion)
             {
                 return;
             }

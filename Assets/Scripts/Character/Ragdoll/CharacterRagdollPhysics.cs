@@ -22,7 +22,6 @@ namespace Character.Ragdoll
 
         private Vector3 _capturedHipsPosition;
         private Quaternion _capturedHipsRotation;
-        private bool _isCaptured;
 
         public CharacterRagdollPhysics(CharacterRagdollRig rig,
             float minimumThrowTime, float maximumThrowTime, float settledVelocity,
@@ -53,7 +52,6 @@ namespace Character.Ragdoll
             _rig.SetHipsKinematic(true);
             _capturedHipsPosition = _rig.HipsBody.position;
             _capturedHipsRotation = _rig.HipsBody.rotation;
-            _isCaptured = true;
         }
 
         public void SetCapturedPose(Vector3 position, Quaternion rotation)
@@ -65,23 +63,12 @@ namespace Character.Ragdoll
 
             _capturedHipsPosition = _rig.GetCapturedHipsPosition(position, rotation);
             _capturedHipsRotation = _rig.GetCapturedHipsRotation(rotation);
-        }
-
-        public void UpdateCapturedPose()
-        {
-            if (!_isCaptured)
-            {
-                return;
-            }
-
             _rig.HipsBody.MovePosition(_capturedHipsPosition);
             _rig.HipsBody.MoveRotation(_capturedHipsRotation);
         }
 
         public void BeginThrow()
         {
-            _isCaptured = false;
-
             if (!_rig.IsActive)
             {
                 _rig.Activate();
@@ -139,11 +126,6 @@ namespace Character.Ragdoll
 
                 yield return null;
             }
-        }
-
-        public void CancelCapture()
-        {
-            _isCaptured = false;
         }
 
         public bool TryGetHighestGroundPointUnderRagdoll(out Vector3 groundPoint)

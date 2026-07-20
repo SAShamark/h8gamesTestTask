@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace Cameras
 {
+
     public class CameraControl : MonoBehaviour
     {
         [Header("Input")]
@@ -13,13 +14,14 @@ namespace Cameras
         [SerializeField] private ThirdPersonCamera _thirdPersonCamera = new();
         [SerializeField] private RagdollCamera _ragdollCamera = new();
         [SerializeField] private CameraCollisionLogic _collisionLogic = new();
-
+        
         private CameraViewMode _viewMode = CameraViewMode.ThirdPerson;
         private CameraViewMode _viewModeBeforeForce;
         private Transform _target;
         private float _yaw;
         private float _pitch;
         private bool _isViewModeForced;
+        private bool _isInputLocked;
 
         public bool IsFirstPerson => _viewMode == CameraViewMode.FirstPerson;
 
@@ -38,6 +40,11 @@ namespace Cameras
 
         private void Update()
         {
+            if (_isInputLocked)
+            {
+                return;
+            }
+
             UpdateViewMode();
             UpdateLookInput();
         }
@@ -103,6 +110,11 @@ namespace Cameras
         public void SetExtraCollisionIgnoreRoot(Transform ignoreRoot)
         {
             _collisionLogic.SetExtraIgnoreRoot(ignoreRoot);
+        }
+
+        public void SetInputLocked(bool isLocked)
+        {
+            _isInputLocked = isLocked;
         }
 
         private void UpdateActiveCamera()

@@ -24,6 +24,7 @@ namespace Character
         private CharacterController _characterController;
         private CameraControl _cameraControl;
         private CharacterState _state;
+        private bool _isMovementLocked;
 
         public bool CanBeCaptured => _state == CharacterState.Active;
 
@@ -45,28 +46,15 @@ namespace Character
             UpdateMovement();
         }
 
-        private void FixedUpdate()
-        {
-            UpdateCapturedRagdoll();
-        }
-
         private void UpdateMovement()
         {
-            if (_state != CharacterState.Active)
+            if (_state != CharacterState.Active || _isMovementLocked)
             {
                 return;
             }
 
             _movementLogic.UpdateMovement();
             _effectsLogic.UpdateStepDust(_movementLogic.IsMovingOnGround);
-        }
-
-        private void UpdateCapturedRagdoll()
-        {
-            if (_state == CharacterState.Captured)
-            {
-                _captureLogic.UpdateCapturedRagdoll();
-            }
         }
 
         public bool TryBeginCapture()
@@ -85,6 +73,17 @@ namespace Character
         public void SetCapturedPose(Vector3 position, Quaternion rotation)
         {
             _captureLogic.SetCapturedPose(position, rotation);
+        }
+
+        public void SetMovementLocked(bool isLocked)
+        {
+            _isMovementLocked = isLocked;
+
+            if (_isMovementLocked)
+            {
+                _movementLogic.StopMovement();
+                _effectsLogic.StopStepDust();
+            }
         }
 
         public void Throw(Vector3 velocity, Vector3 angularVelocity)

@@ -8,11 +8,22 @@ public class EntryPoint : MonoBehaviour
     [SerializeField] private CameraControl _cameraControl;
     [SerializeField] private CharacterControl _characterControl;
     [SerializeField] private TentacleControl _tentacleControl;
+    [SerializeField] private IntroCutsceneLogic _introCutsceneLogic = new();
 
     private void Awake()
     {
         _cameraControl.Initialize(_characterControl.transform);
         _characterControl.Initialize(_cameraControl);
         _tentacleControl.Initialize(_characterControl.transform);
+    }
+
+    private void Start()
+    {
+        _introCutsceneLogic.Play(_characterControl, _cameraControl);
+    }
+
+    private void OnDestroy()
+    {
+        _introCutsceneLogic.Dispose();
     }
 }

@@ -50,11 +50,6 @@ namespace Character
             _ragdollLogic.SetCapturedPose(position, rotation);
         }
 
-        public void UpdateCapturedRagdoll()
-        {
-            _ragdollLogic.UpdateCapturedPose();
-        }
-
         public void Throw(Vector3 velocity)
         {
             _cameraControl.ForceRagdollView(_ragdollLogic.HipsTransform, velocity);

@@ -98,7 +98,8 @@ namespace Tentacle
             _releaseTween = DOTween.To(() => _wrapWeight,
                     value => _wrapWeight = value, 0f,
                     _releaseDuration * _wrapWeight)
-                .SetEase(Ease.Linear);
+                .SetEase(Ease.Linear)
+                .SetUpdate(UpdateType.Fixed);
         }
 
         public void BeginFollowThrough(Vector3 axis)
@@ -117,7 +118,8 @@ namespace Tentacle
                     () => _followThroughProgress,
                     value => _followThroughProgress = value,
                     1f, _followThroughDuration)
-                .SetEase(Ease.OutSine);
+                .SetEase(Ease.OutSine)
+                .SetUpdate(UpdateType.Fixed);
         }
 
         public void Initialize(Transform rootBone, float groundHeight)
@@ -242,7 +244,8 @@ namespace Tentacle
             _retractTween = DOTween.To(() => _retractProgress,
                     value => _retractProgress = value, 1f,
                     _retractDuration)
-                .SetEase(Ease.Linear);
+                .SetEase(Ease.Linear)
+                .SetUpdate(UpdateType.Fixed);
         }
 
         private void CaptureFollowThroughStartPose()
@@ -281,6 +284,7 @@ namespace Tentacle
         private void CreateReachSequence()
         {
             _reachSequence = DOTween.Sequence()
+                .SetUpdate(UpdateType.Fixed)
                 .SetAutoKill(false)
                 .Pause();
             _reachSequence.Append(DOTween.To(() => _windupWeight,

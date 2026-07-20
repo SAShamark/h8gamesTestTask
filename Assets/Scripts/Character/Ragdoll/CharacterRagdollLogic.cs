@@ -56,11 +56,6 @@ namespace Character.Ragdoll
             _physics.SetCapturedPose(position, rotation);
         }
 
-        public void UpdateCapturedPose()
-        {
-            _physics.UpdateCapturedPose();
-        }
-
         public void BeginThrow()
         {
             _physics.BeginThrow();
@@ -88,7 +83,6 @@ namespace Character.Ragdoll
 
         public void CancelRagdoll()
         {
-            _physics.CancelCapture();
             _recovery.Cancel();
         }
     }

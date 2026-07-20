@@ -7,6 +7,7 @@ namespace Character.Ragdoll
         private readonly float[] _bodyDrag;
         private readonly float[] _bodyAngularDrag;
         private readonly float[] _bodyMaximumAngularVelocity;
+        private readonly RigidbodyInterpolation[] _bodyInterpolation;
         private readonly SkinnedMeshRenderer[] _renderers;
         private readonly bool[] _rendererUpdateWhenOffscreen;
         private readonly Vector3 _hipsCharacterLocalPosition;
@@ -28,6 +29,7 @@ namespace Character.Ragdoll
             _bodyDrag = new float[Bodies.Length];
             _bodyAngularDrag = new float[Bodies.Length];
             _bodyMaximumAngularVelocity = new float[Bodies.Length];
+            _bodyInterpolation = new RigidbodyInterpolation[Bodies.Length];
 
             for (int i = 0; i < Bodies.Length; i++)
             {
@@ -36,6 +38,7 @@ namespace Character.Ragdoll
                 _bodyDrag[i] = body.drag;
                 _bodyAngularDrag[i] = body.angularDrag;
                 _bodyMaximumAngularVelocity[i] = body.maxAngularVelocity;
+                _bodyInterpolation[i] = body.interpolation;
             }
 
             Colliders = GetRagdollColliders();
@@ -73,6 +76,7 @@ namespace Character.Ragdoll
 
             Animator.enabled = false;
             SetRenderersUpdateWhenOffscreen(true);
+            SetBodyInterpolation(RigidbodyInterpolation.Interpolate);
             ModelTransform.SetParent(null, true);
             SetCollidersEnabled(true);
             SetBodiesKinematic(false);
@@ -84,6 +88,7 @@ namespace Character.Ragdoll
         public void Disable()
         {
             RestoreBodyDynamics();
+            RestoreBodyInterpolation();
             Freeze();
             SetCollidersEnabled(false);
             IsActive = false;
@@ -110,6 +115,22 @@ namespace Character.Ragdoll
                 body.drag = _bodyDrag[i];
                 body.angularDrag = _bodyAngularDrag[i];
                 body.maxAngularVelocity = _bodyMaximumAngularVelocity[i];
+            }
+        }
+
+        private void SetBodyInterpolation(RigidbodyInterpolation interpolation)
+        {
+            for (int i = 0; i < Bodies.Length; i++)
+            {
+                Bodies[i].interpolation = interpolation;
+            }
+        }
+
+        private void RestoreBodyInterpolation()
+        {
+            for (int i = 0; i < Bodies.Length; i++)
+            {
+                Bodies[i].interpolation = _bodyInterpolation[i];
             }
         }
 
